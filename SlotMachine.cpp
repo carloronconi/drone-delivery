@@ -508,6 +508,11 @@ class SlotMachine : public BaseProject {
 		// the third parameter is its size
 		// the fourth parameter is the location inside the descriptor set of this uniform block
 
+        /**
+         * It's actually the world that moves around, while the camera stays fixed, so each object in the world
+         * has its own Model View Projection matrix (mvpMat), as you see below, and they all move using the World matrix
+         */
+
 		glm::mat4 World = glm::mat4(1);		
 		uboBody.amb = 1.0f; uboBody.gamma = 180.0f; uboBody.sColor = glm::vec3(1.0f);
 		uboBody.mvpMat = Prj * View * World;
