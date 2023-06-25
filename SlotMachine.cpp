@@ -43,9 +43,6 @@ struct VertexOverlay {
 	glm::vec2 UV;
 };
 
-
-
-
 // MAIN ! 
 class SlotMachine : public BaseProject {
 	protected:
@@ -66,13 +63,16 @@ class SlotMachine : public BaseProject {
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
-	Model<VertexMesh> MPark1, MPark2, MPark3, MPark4, MHandle; /** one per model **/
+	Model<VertexMesh> MHandle; /** one per model **/
+	std::array<Model<VertexMesh>, 4> MPark;
 	Model<VertexOverlay> MKey, MSplash;
-	DescriptorSet DSGubo, DSPark1, DSPark2, DSPark3, DSPark4, DSHandle, DSKey, DSSplash; /** one per instance of model **/
+	DescriptorSet DSGubo, DSHandle, DSKey, DSSplash; /** one per instance of model **/
+	std::array<DescriptorSet, 4> DSPark;
 	Texture TCity, THandle, TKey, TSplash;
 	
 	// C++ storage for uniform variables
-	MeshUniformBlock uboPark1, uboPark2, uboPark3, uboPark4, uboHandle;
+	MeshUniformBlock uboHandle;
+    std::array<MeshUniformBlock, 4> uboPark;
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboKey, uboSplash;
 
@@ -191,10 +191,10 @@ class SlotMachine : public BaseProject {
 		// The second parameter is the pointer to the vertex definition for this model
 		// The third parameter is the file name
 		// The last is a constant specifying the file type: currently only OBJ or GLTF
-		MPark1.init(this, &VMesh, "Models/park_001.mgcg", MGCG);
-        MPark2.init(this, &VMesh, "Models/park_002.mgcg", MGCG);
-        MPark3.init(this, &VMesh, "Models/park_003.mgcg", MGCG);
-        MPark4.init(this, &VMesh, "Models/park_004.mgcg", MGCG);
+        for (int i = 0; i < MPark.size(); ++i) {
+            std::string modelFile = "Models/park_00" + std::to_string(i + 1) + ".mgcg";
+            MPark[i].init(this, &VMesh, modelFile, MGCG);
+        }
 
 		MHandle.init(this, &VMesh, "Models/SlotHandle.obj", OBJ);
 
@@ -230,30 +230,12 @@ class SlotMachine : public BaseProject {
 		// This creates a new pipeline (with the current surface), using its shaders
 		PMesh.create();
 		POverlay.create();
-		
-		// Here you define the data set
-		DSPark1.init(this, &DSLMesh, {
-		// the second parameter, is a pointer to the Uniform Set Layout of this set
-		// the last parameter is an array, with one element per binding of the set.
-		// first  elmenet : the binding number
-		// second element : UNIFORM or TEXTURE (an enum) depending on the type
-		// third  element : only for UNIFORMs, the size of the corresponding C++ object. For texture, just put 0
-		// fourth element : only for TEXTUREs, the pointer to the corresponding texture object. For uniforms, use nullptr
-					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TCity}
-				});
-        DSPark2.init(this, &DSLMesh, {
+
+        for (auto &dsPark : DSPark) {
+            dsPark.init(this, &DSLMesh, {
                 {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-                {1, TEXTURE, 0, &TCity}
-        });
-        DSPark3.init(this, &DSLMesh, {
-                {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-                {1, TEXTURE, 0, &TCity}
-        });
-        DSPark4.init(this, &DSLMesh, {
-                {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-                {1, TEXTURE, 0, &TCity}
-        });
+                {1, TEXTURE, 0, &TCity}});
+        }
 
 		DSHandle.init(this, &DSLMesh, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
@@ -280,10 +262,9 @@ class SlotMachine : public BaseProject {
 		POverlay.cleanup();
 
 		// Cleanup datasets
-		DSPark1.cleanup();
-        DSPark2.cleanup();
-        DSPark3.cleanup();
-        DSPark4.cleanup();
+        for (auto &dsPark : DSPark) {
+            dsPark.cleanup();
+        }
 
 		DSHandle.cleanup();
 
@@ -304,10 +285,9 @@ class SlotMachine : public BaseProject {
 		TSplash.cleanup();
 		
 		// Cleanup models
-		MPark1.cleanup();
-        MPark2.cleanup();
-        MPark3.cleanup();
-        MPark4.cleanup();
+        for (auto &mPark : MPark) {
+            mPark.cleanup();
+        }
 
 		MHandle.cleanup();
 		MKey.cleanup();
@@ -337,39 +317,12 @@ class SlotMachine : public BaseProject {
 		// For a pipeline object, this command binds the corresponing pipeline to the command buffer passed in its parameter
 
 		// binds the model
-		MPark1.bind(commandBuffer);
-		// For a Model object, this command binds the corresponing index and vertex buffer
-		// to the command buffer passed in its parameter
-		
-		// binds the data set
-		DSPark1.bind(commandBuffer, PMesh, 1, currentImage);
-		// For a Dataset object, this command binds the corresponing dataset
-		// to the command buffer and pipeline passed in its first and second parameters.
-		// The third parameter is the number of the set being bound
-		// As described in the Vulkan tutorial, a different dataset is required for each image in the swap chain.
-		// This is done automatically in file Starter.hpp, however the command here needs also the index
-		// of the current image in the swap chain, passed in its last parameter
-					
-		// record the drawing command in the command buffer
-		vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(MPark1.indices.size()), 1, 0, 0, 0);
-		// the second parameter is the number of indexes to be drawn. For a Model object,
-		// this can be retrieved with the .indices.size() method.
-
-        MPark2.bind(commandBuffer);
-        DSPark2.bind(commandBuffer, PMesh, 1, currentImage);
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(MPark2.indices.size()), 1, 0, 0, 0);
-
-        MPark3.bind(commandBuffer);
-        DSPark3.bind(commandBuffer, PMesh, 1, currentImage);
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(MPark3.indices.size()), 1, 0, 0, 0);
-
-        MPark4.bind(commandBuffer);
-        DSPark4.bind(commandBuffer, PMesh, 1, currentImage);
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(MPark4.indices.size()), 1, 0, 0, 0);
+        for (int i = 0; i < MPark.size(); ++i) {
+            MPark[i].bind(commandBuffer);
+            DSPark[i].bind(commandBuffer, PMesh, 1, currentImage);
+            vkCmdDrawIndexed(commandBuffer,
+                             static_cast<uint32_t>(MPark[i].indices.size()), 1, 0, 0, 0);
+        }
 
         MHandle.bind(commandBuffer);
 		DSHandle.bind(commandBuffer, PMesh, 1, currentImage);
@@ -524,32 +477,14 @@ class SlotMachine : public BaseProject {
          */
 
         glm::mat4 World = glm::mat4(1);
-        uboPark1.amb = 1.0f; uboPark1.gamma = 180.0f; uboPark1.sColor = glm::vec3(1.0f);
-        uboPark1.mvpMat = Prj * View * World;
-        uboPark1.mMat = World;
-        uboPark1.nMat = glm::inverse(glm::transpose(World));
-		DSPark1.map(currentImage, &uboPark1, sizeof(uboPark1), 0);
-
-        World = glm::translate(glm::mat4(1), glm::vec3{2.0, 2.0, 2.0});
-        uboPark2.amb = 1.0f; uboPark2.gamma = 180.0f; uboPark2.sColor = glm::vec3(1.0f);
-        uboPark2.mvpMat = Prj * View * World;
-        uboPark2.mMat = World;
-        uboPark2.nMat = glm::inverse(glm::transpose(World));
-        DSPark2.map(currentImage, &uboPark2, sizeof(uboPark2), 0);
-
-        glm::mat4(1);
-        uboPark3.amb = 1.0f; uboPark3.gamma = 180.0f; uboPark3.sColor = glm::vec3(1.0f);
-        uboPark3.mvpMat = Prj * View * World;
-        uboPark3.mMat = World;
-        uboPark3.nMat = glm::inverse(glm::transpose(World));
-        DSPark3.map(currentImage, &uboPark3, sizeof(uboPark3), 0);
-
-        glm::mat4(1);
-        uboPark4.amb = 1.0f; uboPark4.gamma = 180.0f; uboPark4.sColor = glm::vec3(1.0f);
-        uboPark4.mvpMat = Prj * View * World;
-        uboPark4.mMat = World;
-        uboPark4.nMat = glm::inverse(glm::transpose(World));
-        DSPark4.map(currentImage, &uboPark4, sizeof(uboPark4), 0);
+        for (int i = 0; i < uboPark.size(); ++i) {
+            World = glm::translate(glm::mat4(1), glm::vec3{static_cast<float>(i) * 3.0, 0.0, static_cast<float>(i) * 3.0});
+            uboPark[i].amb = 1.0f; uboPark[i].gamma = 180.0f; uboPark[i].sColor = glm::vec3(1.0f);
+            uboPark[i].mvpMat = Prj * View * World;
+            uboPark[i].mMat = World;
+            uboPark[i].nMat = glm::inverse(glm::transpose(World));
+            DSPark[i].map(currentImage, &uboPark[i], sizeof(uboPark[i]), 0);
+        }
 	
 		World = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.3f,0.5f,-0.15f)),
 							HandleRot, glm::vec3(1,0,0));
