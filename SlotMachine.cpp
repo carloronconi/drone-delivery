@@ -348,6 +348,14 @@ class SlotMachine : public BaseProject {
 		if(glfwGetKey(window, GLFW_KEY_ESCAPE)) {
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
+
+        /**
+         * keep gubo.eyePos fixed
+         * compute the position of the plane, i.e. the plane's world matrix + view and projection matrices based on plane position (world matrix)
+         * terrain world matrix stays fixed (as already computed) and vp matrices are same as vp of plane
+         *
+         * ==> only thing that needs computing is WVP matrix of the plane, all others act accordingly
+         */
 		
 		// Integration with the timers and the controllers
 		float deltaT;
