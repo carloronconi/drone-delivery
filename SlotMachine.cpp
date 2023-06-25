@@ -66,13 +66,13 @@ class SlotMachine : public BaseProject {
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
-	Model<VertexMesh> MBody, MHandle, MWheel;
+	Model<VertexMesh> MPark1, MPark2, MPark3, MPark4, MHandle; /** one per model **/
 	Model<VertexOverlay> MKey, MSplash;
-	DescriptorSet DSGubo, DSBody, DSHandle, DSWheel1, DSWheel2, DSWheel3, DSKey, DSSplash;
-	Texture TBody, THandle, TWheel, TKey, TSplash;
+	DescriptorSet DSGubo, DSPark1, DSPark2, DSPark3, DSPark4, DSHandle, DSKey, DSSplash; /** one per instance of model **/
+	Texture TCity, THandle, TKey, TSplash;
 	
 	// C++ storage for uniform variables
-	MeshUniformBlock uboBody, uboHandle, uboWheel1, uboWheel2, uboWheel3;
+	MeshUniformBlock uboPark1, uboPark2, uboPark3, uboPark4, uboHandle;
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboKey, uboSplash;
 
@@ -191,9 +191,12 @@ class SlotMachine : public BaseProject {
 		// The second parameter is the pointer to the vertex definition for this model
 		// The third parameter is the file name
 		// The last is a constant specifying the file type: currently only OBJ or GLTF
-		MBody.init(this,   &VMesh, "Models/SlotBody.obj", OBJ);
+		MPark1.init(this, &VMesh, "Models/park_001.mgcg", MGCG);
+        MPark2.init(this, &VMesh, "Models/park_002.mgcg", MGCG);
+        MPark3.init(this, &VMesh, "Models/park_003.mgcg", MGCG);
+        MPark4.init(this, &VMesh, "Models/park_004.mgcg", MGCG);
+
 		MHandle.init(this, &VMesh, "Models/SlotHandle.obj", OBJ);
-		MWheel.init(this,  &VMesh, "Models/SlotWheel.obj", OBJ);
 
 		// Creates a mesh with direct enumeration of vertices and indices
 		MKey.vertices = {{{-0.8f, 0.6f}, {0.0f,0.0f}}, {{-0.8f, 0.95f}, {0.0f,1.0f}},
@@ -209,9 +212,8 @@ class SlotMachine : public BaseProject {
 		
 		// Create the textures
 		// The second parameter is the file name
-		TBody.init(this,   "textures/SlotBody.png");
+		TCity.init(this, "textures/Textures_City.png");
 		THandle.init(this, "textures/SlotHandle.png");
-		TWheel.init(this,  "textures/SlotWheel.png");
 		TKey.init(this,    "textures/PressSpace.png");
 		TSplash.init(this, "textures/SplashScreen.png");
 		
@@ -230,7 +232,7 @@ class SlotMachine : public BaseProject {
 		POverlay.create();
 		
 		// Here you define the data set
-		DSBody.init(this, &DSLMesh, {
+		DSPark1.init(this, &DSLMesh, {
 		// the second parameter, is a pointer to the Uniform Set Layout of this set
 		// the last parameter is an array, with one element per binding of the set.
 		// first  elmenet : the binding number
@@ -238,23 +240,24 @@ class SlotMachine : public BaseProject {
 		// third  element : only for UNIFORMs, the size of the corresponding C++ object. For texture, just put 0
 		// fourth element : only for TEXTUREs, the pointer to the corresponding texture object. For uniforms, use nullptr
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TBody}
+					{1, TEXTURE, 0, &TCity}
 				});
+        DSPark2.init(this, &DSLMesh, {
+                {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+                {1, TEXTURE, 0, &TCity}
+        });
+        DSPark3.init(this, &DSLMesh, {
+                {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+                {1, TEXTURE, 0, &TCity}
+        });
+        DSPark4.init(this, &DSLMesh, {
+                {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+                {1, TEXTURE, 0, &TCity}
+        });
+
 		DSHandle.init(this, &DSLMesh, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &THandle}
-				});
-		DSWheel1.init(this, &DSLMesh, {
-					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TWheel}
-				});
-		DSWheel2.init(this, &DSLMesh, {
-					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TWheel}
-				});
-		DSWheel3.init(this, &DSLMesh, {
-					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TWheel}
 				});
 		DSKey.init(this, &DSLOverlay, {
 					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
@@ -277,11 +280,12 @@ class SlotMachine : public BaseProject {
 		POverlay.cleanup();
 
 		// Cleanup datasets
-		DSBody.cleanup();
+		DSPark1.cleanup();
+        DSPark2.cleanup();
+        DSPark3.cleanup();
+        DSPark4.cleanup();
+
 		DSHandle.cleanup();
-		DSWheel1.cleanup();
-		DSWheel2.cleanup();
-		DSWheel3.cleanup();
 
 		DSKey.cleanup();
 		DSSplash.cleanup();
@@ -294,16 +298,18 @@ class SlotMachine : public BaseProject {
 	// methods: .cleanup() recreates them, while .destroy() delete them completely
 	void localCleanup() {
 		// Cleanup textures
-		TBody.cleanup();
+		TCity.cleanup();
 		THandle.cleanup();
-		TWheel.cleanup();
 		TKey.cleanup();
 		TSplash.cleanup();
 		
 		// Cleanup models
-		MBody.cleanup();
+		MPark1.cleanup();
+        MPark2.cleanup();
+        MPark3.cleanup();
+        MPark4.cleanup();
+
 		MHandle.cleanup();
-		MWheel.cleanup();
 		MKey.cleanup();
 		MSplash.cleanup();
 		
@@ -331,12 +337,12 @@ class SlotMachine : public BaseProject {
 		// For a pipeline object, this command binds the corresponing pipeline to the command buffer passed in its parameter
 
 		// binds the model
-		MBody.bind(commandBuffer);
+		MPark1.bind(commandBuffer);
 		// For a Model object, this command binds the corresponing index and vertex buffer
 		// to the command buffer passed in its parameter
 		
 		// binds the data set
-		DSBody.bind(commandBuffer, PMesh, 1, currentImage);
+		DSPark1.bind(commandBuffer, PMesh, 1, currentImage);
 		// For a Dataset object, this command binds the corresponing dataset
 		// to the command buffer and pipeline passed in its first and second parameters.
 		// The third parameter is the number of the set being bound
@@ -346,25 +352,29 @@ class SlotMachine : public BaseProject {
 					
 		// record the drawing command in the command buffer
 		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MBody.indices.size()), 1, 0, 0, 0);
+                         static_cast<uint32_t>(MPark1.indices.size()), 1, 0, 0, 0);
 		// the second parameter is the number of indexes to be drawn. For a Model object,
 		// this can be retrieved with the .indices.size() method.
 
-		MHandle.bind(commandBuffer);
+        MPark2.bind(commandBuffer);
+        DSPark2.bind(commandBuffer, PMesh, 1, currentImage);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MPark2.indices.size()), 1, 0, 0, 0);
+
+        MPark3.bind(commandBuffer);
+        DSPark3.bind(commandBuffer, PMesh, 1, currentImage);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MPark3.indices.size()), 1, 0, 0, 0);
+
+        MPark4.bind(commandBuffer);
+        DSPark4.bind(commandBuffer, PMesh, 1, currentImage);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MPark4.indices.size()), 1, 0, 0, 0);
+
+        MHandle.bind(commandBuffer);
 		DSHandle.bind(commandBuffer, PMesh, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 				static_cast<uint32_t>(MHandle.indices.size()), 1, 0, 0, 0);
-
-		MWheel.bind(commandBuffer);
-		DSWheel1.bind(commandBuffer, PMesh, 1, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MWheel.indices.size()), 1, 0, 0, 0);
-		DSWheel2.bind(commandBuffer, PMesh, 1, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MWheel.indices.size()), 1, 0, 0, 0);
-		DSWheel3.bind(commandBuffer, PMesh, 1, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MWheel.indices.size()), 1, 0, 0, 0);
 
 		POverlay.bind(commandBuffer);
 		MKey.bind(commandBuffer);
@@ -513,12 +523,33 @@ class SlotMachine : public BaseProject {
          * has its own Model View Projection matrix (mvpMat), as you see below, and they all move using the World matrix
          */
 
-		glm::mat4 World = glm::mat4(1);		
-		uboBody.amb = 1.0f; uboBody.gamma = 180.0f; uboBody.sColor = glm::vec3(1.0f);
-		uboBody.mvpMat = Prj * View * World;
-		uboBody.mMat = World;
-		uboBody.nMat = glm::inverse(glm::transpose(World));
-		DSBody.map(currentImage, &uboBody, sizeof(uboBody), 0);
+        glm::mat4 World = glm::mat4(1);
+        uboPark1.amb = 1.0f; uboPark1.gamma = 180.0f; uboPark1.sColor = glm::vec3(1.0f);
+        uboPark1.mvpMat = Prj * View * World;
+        uboPark1.mMat = World;
+        uboPark1.nMat = glm::inverse(glm::transpose(World));
+		DSPark1.map(currentImage, &uboPark1, sizeof(uboPark1), 0);
+
+        World = glm::translate(glm::mat4(1), glm::vec3{2.0, 2.0, 2.0});
+        uboPark2.amb = 1.0f; uboPark2.gamma = 180.0f; uboPark2.sColor = glm::vec3(1.0f);
+        uboPark2.mvpMat = Prj * View * World;
+        uboPark2.mMat = World;
+        uboPark2.nMat = glm::inverse(glm::transpose(World));
+        DSPark2.map(currentImage, &uboPark2, sizeof(uboPark2), 0);
+
+        glm::mat4(1);
+        uboPark3.amb = 1.0f; uboPark3.gamma = 180.0f; uboPark3.sColor = glm::vec3(1.0f);
+        uboPark3.mvpMat = Prj * View * World;
+        uboPark3.mMat = World;
+        uboPark3.nMat = glm::inverse(glm::transpose(World));
+        DSPark3.map(currentImage, &uboPark3, sizeof(uboPark3), 0);
+
+        glm::mat4(1);
+        uboPark4.amb = 1.0f; uboPark4.gamma = 180.0f; uboPark4.sColor = glm::vec3(1.0f);
+        uboPark4.mvpMat = Prj * View * World;
+        uboPark4.mMat = World;
+        uboPark4.nMat = glm::inverse(glm::transpose(World));
+        DSPark4.map(currentImage, &uboPark4, sizeof(uboPark4), 0);
 	
 		World = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.3f,0.5f,-0.15f)),
 							HandleRot, glm::vec3(1,0,0));
@@ -527,30 +558,6 @@ class SlotMachine : public BaseProject {
 		uboHandle.mMat = World;
 		uboHandle.nMat = glm::inverse(glm::transpose(World));
 		DSHandle.map(currentImage, &uboHandle, sizeof(uboHandle), 0);
-	
-		World = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(-0.15f,0.93f,-0.15f)),
-							Wheel1Rot, glm::vec3(1,0,0));
-		uboWheel1.amb = 1.0f; uboWheel1.gamma = 180.0f; uboWheel1.sColor = glm::vec3(1.0f);
-		uboWheel1.mvpMat = Prj * View * World;
-		uboWheel1.mMat = World;
-		uboWheel1.nMat = glm::inverse(glm::transpose(World));
-		DSWheel1.map(currentImage, &uboWheel1, sizeof(uboWheel1), 0);
-	
-		World = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,0.93f,-0.15f)),
-							Wheel2Rot, glm::vec3(1,0,0));
-		uboWheel2.amb = 1.0f; uboWheel2.gamma = 180.0f; uboWheel2.sColor = glm::vec3(1.0f);
-		uboWheel2.mvpMat = Prj * View * World;
-		uboWheel2.mMat = World;
-		uboWheel2.nMat = glm::inverse(glm::transpose(World));
-		DSWheel2.map(currentImage, &uboWheel2, sizeof(uboWheel2), 0);
-	
-		World = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.15f,0.93f,-0.15f)),
-							Wheel3Rot, glm::vec3(1,0,0));
-		uboWheel3.amb = 1.0f; uboWheel3.gamma = 180.0f; uboWheel3.sColor = glm::vec3(1.0f);
-		uboWheel3.mvpMat = Prj * View * World;
-		uboWheel3.mMat = World;
-		uboWheel3.nMat = glm::inverse(glm::transpose(World));
-		DSWheel3.map(currentImage, &uboWheel3, sizeof(uboWheel3), 0);
 
 		uboKey.visible = (gameState == 1) ? 1.0f : 0.0f;
 		DSKey.map(currentImage, &uboKey, sizeof(uboKey), 0);
