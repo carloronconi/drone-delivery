@@ -63,15 +63,15 @@ class SlotMachine : public BaseProject {
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
-	Model<VertexMesh> MHandle; /** one per model **/
+	Model<VertexMesh> MPlane; /** one per model **/
 	std::array<Model<VertexMesh>, 4> MPark;
 	Model<VertexOverlay> MKey, MSplash;
-	DescriptorSet DSGubo, DSHandle, DSKey, DSSplash; /** one per instance of model **/
+	DescriptorSet DSGubo, DSPlane, DSKey, DSSplash; /** one per instance of model **/
 	std::array<DescriptorSet, 4> DSPark;
-	Texture TCity, THandle, TKey, TSplash;
+	Texture TCity, TPlane, TKey, TSplash;
 	
 	// C++ storage for uniform variables
-	MeshUniformBlock uboHandle;
+	MeshUniformBlock uboPlane;
     std::array<MeshUniformBlock, 4> uboPark;
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboKey, uboSplash;
@@ -196,7 +196,7 @@ class SlotMachine : public BaseProject {
             MPark[i].init(this, &VMesh, modelFile, MGCG);
         }
 
-		MHandle.init(this, &VMesh, "Models/SlotHandle.obj", OBJ);
+		MPlane.init(this, &VMesh, "Models/plane_001.mgcg", MGCG);
 
 		// Creates a mesh with direct enumeration of vertices and indices
 		MKey.vertices = {{{-0.8f, 0.6f}, {0.0f,0.0f}}, {{-0.8f, 0.95f}, {0.0f,1.0f}},
@@ -213,7 +213,7 @@ class SlotMachine : public BaseProject {
 		// Create the textures
 		// The second parameter is the file name
 		TCity.init(this, "textures/Textures_City.png");
-		THandle.init(this, "textures/SlotHandle.png");
+		TPlane.init(this, "textures/Textures_City.png");
 		TKey.init(this,    "textures/PressSpace.png");
 		TSplash.init(this, "textures/SplashScreen.png");
 		
@@ -237,9 +237,9 @@ class SlotMachine : public BaseProject {
                 {1, TEXTURE, 0, &TCity}});
         }
 
-		DSHandle.init(this, &DSLMesh, {
+		DSPlane.init(this, &DSLMesh, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &THandle}
+					{1, TEXTURE, 0, &TPlane}
 				});
 		DSKey.init(this, &DSLOverlay, {
 					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
@@ -266,7 +266,7 @@ class SlotMachine : public BaseProject {
             dsPark.cleanup();
         }
 
-		DSHandle.cleanup();
+		DSPlane.cleanup();
 
 		DSKey.cleanup();
 		DSSplash.cleanup();
@@ -280,7 +280,7 @@ class SlotMachine : public BaseProject {
 	void localCleanup() {
 		// Cleanup textures
 		TCity.cleanup();
-		THandle.cleanup();
+		TPlane.cleanup();
 		TKey.cleanup();
 		TSplash.cleanup();
 		
@@ -289,7 +289,7 @@ class SlotMachine : public BaseProject {
             mPark.cleanup();
         }
 
-		MHandle.cleanup();
+		MPlane.cleanup();
 		MKey.cleanup();
 		MSplash.cleanup();
 		
@@ -324,10 +324,10 @@ class SlotMachine : public BaseProject {
                              static_cast<uint32_t>(MPark[i].indices.size()), 1, 0, 0, 0);
         }
 
-        MHandle.bind(commandBuffer);
-		DSHandle.bind(commandBuffer, PMesh, 1, currentImage);
+        MPlane.bind(commandBuffer);
+		DSPlane.bind(commandBuffer, PMesh, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MHandle.indices.size()), 1, 0, 0, 0);
+                         static_cast<uint32_t>(MPlane.indices.size()), 1, 0, 0, 0);
 
 		POverlay.bind(commandBuffer);
 		MKey.bind(commandBuffer);
@@ -486,13 +486,13 @@ class SlotMachine : public BaseProject {
             DSPark[i].map(currentImage, &uboPark[i], sizeof(uboPark[i]), 0);
         }
 	
-		World = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.3f,0.5f,-0.15f)),
-							HandleRot, glm::vec3(1,0,0));
-		uboHandle.amb = 1.0f; uboHandle.gamma = 180.0f; uboHandle.sColor = glm::vec3(1.0f);
-		uboHandle.mvpMat = Prj * View * World;
-		uboHandle.mMat = World;
-		uboHandle.nMat = glm::inverse(glm::transpose(World));
-		DSHandle.map(currentImage, &uboHandle, sizeof(uboHandle), 0);
+		World = glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.3f,0.5f,-0.15f)),
+							HandleRot, glm::vec3(1,0,0)), glm::vec3(0.1));
+        uboPlane.amb = 1.0f; uboPlane.gamma = 180.0f; uboPlane.sColor = glm::vec3(1.0f);
+        uboPlane.mvpMat = Prj * View * World;
+        uboPlane.mMat = World;
+        uboPlane.nMat = glm::inverse(glm::transpose(World));
+		DSPlane.map(currentImage, &uboPlane, sizeof(uboPlane), 0);
 
 		uboKey.visible = (gameState == 1) ? 1.0f : 0.0f;
 		DSKey.map(currentImage, &uboKey, sizeof(uboKey), 0);
