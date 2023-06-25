@@ -478,7 +478,7 @@ class SlotMachine : public BaseProject {
 
         glm::mat4 World = glm::mat4(1);
         for (int i = 0; i < uboPark.size(); ++i) {
-            World = glm::translate(glm::mat4(1), glm::vec3{static_cast<float>(i) * 3.0, 0.0, static_cast<float>(i) * 3.0});
+            World = glm::translate(glm::mat4(1), glm::vec3{static_cast<float>(i) * 16.0, 0.0, static_cast<float>(i) * 16.0});
             uboPark[i].amb = 1.0f; uboPark[i].gamma = 180.0f; uboPark[i].sColor = glm::vec3(1.0f);
             uboPark[i].mvpMat = Prj * View * World;
             uboPark[i].mMat = World;
