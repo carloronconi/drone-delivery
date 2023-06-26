@@ -3,6 +3,7 @@
 #include "Starter.hpp"
 #include "Plane.hpp"
 #include "UserInputs.hpp"
+#include "Package.hpp"
 
 // The uniform buffer objects data structures
 // Remember to use the correct alignas(...) value
@@ -449,10 +450,14 @@ class Game : public BaseProject {
         static glm::mat4 arrowWorldMat = glm::translate(parkWorldMat, glm::vec3{3, 5, 3});
         const int RANGE = 10;
         const int START = -5;
-        if (userInputs.handleFire) {
-            auto x = static_cast<float>(rand() % RANGE + START) ;
-            auto z = static_cast<float>(rand() % RANGE + START) ;
-            arrowWorldMat = glm::translate(arrowWorldMat, glm::vec3{x, 0, z});
+        glm::vec3 targetPos = {0, 0, 0};
+        static auto* const box = new Package(userInputs, plane->getPositionInWorldCoordinates(), plane->getSpeedInWorldCoordinates(), targetPos);
+
+        if (box->isTargetHit()) {
+            targetPos.x = static_cast<float>(rand() % RANGE + START) ;
+            targetPos.z = static_cast<float>(rand() % RANGE + START) ;
+            arrowWorldMat = glm::translate(arrowWorldMat, targetPos);
+            cout << "\n\n\nTARGET HIT!\n\n\n";
         }
         uboArrow.amb = 1.0f; uboArrow.gamma = 180.0f; uboArrow.sColor = glm::vec3(1.0f);
         uboArrow.mvpMat = projMat * viewMat * arrowWorldMat;
@@ -460,10 +465,11 @@ class Game : public BaseProject {
         uboArrow.nMat = glm::inverse(glm::transpose(arrowWorldMat));
         DSArrow.map(currentImage, &uboArrow, sizeof(uboArrow), 0);
 
+        glm::mat4 boxWorldMat = box->computeWorldMatrix();
         uboBox.amb = 1.0f; uboBox.gamma = 180.0f; uboBox.sColor = glm::vec3(1.0f);
-        uboBox.mvpMat = projMat * viewMat * parkWorldMat;
-        uboBox.mMat = parkWorldMat;
-        uboBox.nMat = glm::inverse(glm::transpose(parkWorldMat));
+        uboBox.mvpMat = projMat * viewMat * boxWorldMat;
+        uboBox.mMat = boxWorldMat;
+        uboBox.nMat = glm::inverse(glm::transpose(boxWorldMat));
         DSBox.map(currentImage, &uboBox, sizeof(uboBox), 0);
 
 		uboKey.visible = (gameState == 1) ? 1.0f : 0.0f;

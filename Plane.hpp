@@ -158,8 +158,12 @@ public:
     /**
      * @return plane position in world coordinates
      */
-    vec3 getPositionInWorldCoordinates() {
+    vec3& getPositionInWorldCoordinates() {
         return position;
+    }
+
+    vec3& getSpeedInWorldCoordinates() {
+        return speed;
     }
 };
 
