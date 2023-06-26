@@ -365,14 +365,15 @@ class Game : public BaseProject {
 
 		switch(gameState) {		// main state machine implementation
 		  case 0: // initial state - show splash screen
-			if(userInputs.fire) {
+			if(userInputs.handleFire) {
 				gameState = 1;	// jump to the wait key state
 			}
 			break;
 		  case 1: // wait key state
-			if(userInputs.fire) {
-				gameState = 0;	// jump to the moving handle state
-			}
+          /*
+			if(userInputs.handleFire) {
+				gameState = 0;	// jump back to splash screen
+			} */
 			break;
 		}
 
