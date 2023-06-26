@@ -416,7 +416,7 @@ class Game : public BaseProject {
          * has its own Model View Projection matrix (mvpMat), as you see below, and they all move using the World matrix
          */
 
-        glm::mat4 parkWorldMat = glm::mat4(1);
+        static glm::mat4 parkWorldMat = glm::mat4(1);
         for (int i = 0; i < uboPark.size(); ++i) {
             glm::vec3 trasl = {0, 0, 0};
             if (i == 1) trasl = {16.0, 0, 0};
@@ -436,8 +436,17 @@ class Game : public BaseProject {
         uboPlane.nMat = glm::inverse(glm::transpose(worldMat));
 		DSPlane.map(currentImage, &uboPlane, sizeof(uboPlane), 0);
 
+        static glm::mat4 arrowWorldMat = glm::translate(parkWorldMat, glm::vec3{3, 5, 3});
+        const int RANGE = 10;
+        const int START = -5;
+        if (userInputs.handleFire) {
+            auto x = static_cast<float>(rand() % RANGE + START) ;
+            auto z = static_cast<float>(rand() % RANGE + START) ;
+            arrowWorldMat = glm::translate(arrowWorldMat, glm::vec3{x, 0, z});
+        }
+
         uboArrow.amb = 1.0f; uboArrow.gamma = 180.0f; uboArrow.sColor = glm::vec3(1.0f);
-        uboArrow.mvpMat = projMat * viewMat * parkWorldMat;
+        uboArrow.mvpMat = projMat * viewMat * arrowWorldMat;
         uboArrow.mMat = parkWorldMat;
         uboArrow.nMat = glm::inverse(glm::transpose(parkWorldMat));
         DSArrow.map(currentImage, &uboArrow, sizeof(uboArrow), 0);
