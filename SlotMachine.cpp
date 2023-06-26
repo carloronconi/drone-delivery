@@ -386,7 +386,7 @@ class SlotMachine : public BaseProject {
         glm::mat4 worldMat = plane->computeWorldMatrix();
         glm::vec3 camPos = computeCameraPosition(worldMat, camDist, camHeight, camPitch);
         glm::vec3 planePos = plane->getPositionInWorldCoordinates();
-        glm::mat4 viewMat = glm::lookAt(camPos, planePos, glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 viewMat = glm::lookAt(camPos, planePos, glm::vec3(0.0f, 1.0f, 0.0f)) ;
         glm::mat4 projMat = glm::perspective(FOVy, Ar, nearPlane, farPlane);
         projMat[1][1] *= -1;
 
@@ -444,8 +444,9 @@ class SlotMachine : public BaseProject {
         const float MIN_CAM_HEIGHT_WORLD_COORDINATES = 0.5;
 
         vec3 position =
-                world *
-                glm::vec4(- camDistance * std::cos(camPitch),
+                world
+                * glm::rotate(glm::mat4(1.0f), glm::radians(- 90.0f), glm::vec3(0,1,0))
+                * glm::vec4(- camDistance * std::cos(camPitch),
                           camHeight + camDistance * std::sin(camPitch),
                           0.0f,
                           1);
