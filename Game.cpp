@@ -70,7 +70,7 @@ class Game : public BaseProject {
 	Model<VertexOverlay> MKey, MSplash;
 	DescriptorSet DSGubo, DSPlane, DSArrow, DSKey, DSSplash; /** one per instance of model **/
 	std::array<DescriptorSet, 4> DSPark;
-	Texture TCity, TPlane, TArrow, TKey, TSplash;
+	Texture TCity, TArrow, TKey, TSplash;
 	
 	// C++ storage for uniform variables
 	MeshUniformBlock uboPlane, uboArrow;
@@ -210,7 +210,6 @@ class Game : public BaseProject {
 		// Create the textures
 		// The second parameter is the file name
 		TCity.init(this, "textures/Textures_City.png");
-		TPlane.init(this, "textures/Textures_City.png");
         TArrow.init(this, "textures/arrow.png");
 		TKey.init(this,    "textures/PressSpace.png");
 		TSplash.init(this, "textures/SplashScreen.png");
@@ -232,7 +231,7 @@ class Game : public BaseProject {
 
 		DSPlane.init(this, &DSLMesh, {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TPlane}
+					{1, TEXTURE, 0, &TCity}
 				});
         DSArrow.init(this, &DSLMesh, {
                 {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
@@ -277,7 +276,6 @@ class Game : public BaseProject {
 	void localCleanup() {
 		// Cleanup textures
 		TCity.cleanup();
-		TPlane.cleanup();
         TArrow.cleanup();
 		TKey.cleanup();
 		TSplash.cleanup();
