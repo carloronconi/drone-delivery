@@ -442,11 +442,10 @@ class Game : public BaseProject {
             auto z = static_cast<float>(rand() % RANGE + START) ;
             arrowWorldMat = glm::translate(arrowWorldMat, glm::vec3{x, 0, z});
         }
-
         uboArrow.amb = 1.0f; uboArrow.gamma = 180.0f; uboArrow.sColor = glm::vec3(1.0f);
         uboArrow.mvpMat = projMat * viewMat * arrowWorldMat;
-        uboArrow.mMat = parkWorldMat;
-        uboArrow.nMat = glm::inverse(glm::transpose(parkWorldMat));
+        uboArrow.mMat = arrowWorldMat;
+        uboArrow.nMat = glm::inverse(glm::transpose(arrowWorldMat));
         DSArrow.map(currentImage, &uboArrow, sizeof(uboArrow), 0);
 
 		uboKey.visible = (gameState == 1) ? 1.0f : 0.0f;
