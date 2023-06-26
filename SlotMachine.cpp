@@ -1,6 +1,8 @@
 // This has been adapted from the Vulkan tutorial
 
 #include "Starter.hpp"
+#include "Plane.hpp"
+#include "UserInputs.hpp"
 
 // The uniform buffer objects data structures
 // Remember to use the correct alignas(...) value
@@ -356,122 +358,42 @@ class SlotMachine : public BaseProject {
          *
          * ==> only thing that needs computing is WVP matrix of the plane, all others act accordingly
          */
-		
-		// Integration with the timers and the controllers
-		float deltaT;
-		glm::vec3 m = glm::vec3(0.0f), r = glm::vec3(0.0f);
-		bool fire = false;
-		getSixAxis(deltaT, m, r, fire);
-		// getSixAxis() is defined in Starter.hpp in the base class.
-		// It fills the float point variable passed in its first parameter with the time
-		// since the last call to the procedure.
-		// It fills vec3 in the second parameters, with three values in the -1,1 range corresponding
-		// to motion (with left stick of the gamepad, or ASWD + RF keys on the keyboard)
-		// It fills vec3 in the third parameters, with three values in the -1,1 range corresponding
-		// to motion (with right stick of the gamepad, or Arrow keys + QE keys on the keyboard, or mouse)
-		// If fills the last boolean variable with true if fire has been pressed:
-		//          SPACE on the keyboard, A or B button on the Gamepad, Right mouse button
 
-		// To debounce the pressing of the fire button, and start the event when the key is released
-		static bool wasFire = false;
-		bool handleFire = (wasFire && (!fire));
-		wasFire = fire;
-		
-		// Parameters: wheels and handle speed and range
-		const float HandleSpeed = glm::radians(90.0f);
-		const float HandleRange = glm::radians(45.0f);
-		const float WheelSpeed = glm::radians(180.0f);
-		const float SymExtent = glm::radians(15.0f);	// size of one symbol on the wheel in angle rad.
-		// static variables for current angles
-		static float TargetRot = 0.0;	// Target rotation
+        auto userInputs = UserInputs(this);
 
 		switch(gameState) {		// main state machine implementation
 		  case 0: // initial state - show splash screen
-			if(handleFire) {
+			if(userInputs.fire) {
 				gameState = 1;	// jump to the wait key state
 			}
 			break;
 		  case 1: // wait key state
-			if(handleFire) {
-				gameState = 2;	// jump to the moving handle state
-			}
-			break;
-		  case 2: // handle moving down state
-			HandleRot += HandleSpeed * deltaT;
-			Wheel1Rot += WheelSpeed * deltaT;
-			Wheel2Rot += WheelSpeed * deltaT;
-			Wheel3Rot += WheelSpeed * deltaT;
-			if(HandleRot > HandleRange) {	// when limit is reached, jump the handle moving up state
-				gameState = 3;
-				HandleRot = HandleRange;
-			}
-			break;
-		  case 3: // handle moving up state
-			HandleRot -= HandleSpeed * deltaT;
-			Wheel1Rot += WheelSpeed * deltaT;
-			Wheel2Rot += WheelSpeed * deltaT;
-			Wheel3Rot += WheelSpeed * deltaT;
-			if(HandleRot < 0.0f) {	// when limit is reached, jump the 3 wheels spinning state
-				gameState = 4;
-				HandleRot = 0.0f;
-				TargetRot = Wheel1Rot + (10 + (rand() % 11)) * SymExtent;
-			}
-			break;
-		  case 4: // 3 wheels spinning state
-			Wheel1Rot += WheelSpeed * deltaT;
-			Wheel2Rot += WheelSpeed * deltaT;
-			Wheel3Rot += WheelSpeed * deltaT;
-			if(Wheel1Rot >= TargetRot) {	// When the target rotation is reached, jump to the next state
-				gameState = 5;
-				Wheel1Rot = round(TargetRot / SymExtent) * SymExtent; // quantize position
-				TargetRot = Wheel2Rot + (10 + (rand() % 11)) * SymExtent;
-			}
-			break;
-		  case 5: // 2 wheels spinning state
-			Wheel2Rot += WheelSpeed * deltaT;
-			Wheel3Rot += WheelSpeed * deltaT;
-			if(Wheel2Rot >= TargetRot) {	// When the target rotation is reached, jump to the next state
-				gameState = 6;
-				Wheel2Rot = round(TargetRot / SymExtent) * SymExtent; // quantize position
-				TargetRot = Wheel3Rot + (10 + (rand() % 11)) * SymExtent;
-			}
-			break;
-		  case 6: // 1 wheels spinning state
-			Wheel3Rot += WheelSpeed * deltaT;
-			if(Wheel3Rot >= TargetRot) {	// When the target rotation is reached, jump to the next state
-				gameState = 1;
-				Wheel3Rot = round(TargetRot / SymExtent) * SymExtent; // quantize position
+			if(userInputs.fire) {
+				gameState = 0;	// jump to the moving handle state
 			}
 			break;
 		}
-		
-		// Parameters
-		// Camera FOV-y, Near Plane and Far Plane
-		const float FOVy = glm::radians(90.0f);
-		const float nearPlane = 0.1f;
-		const float farPlane = 100.0f;
-		const float rotSpeed = glm::radians(90.0f);
-		const float movSpeed = 1.0f;
-		
-		CamH += m.z * movSpeed * deltaT;
-		CamRadius -= m.x * movSpeed * deltaT;
-		CamPitch -= r.x * rotSpeed * deltaT;
-		CamYaw += r.y * rotSpeed * deltaT;
-		
-		glm::mat4 Prj = glm::perspective(FOVy, Ar, nearPlane, farPlane);
-		Prj[1][1] *= -1;
-		glm::vec3 camTarget = glm::vec3(0,CamH,0);
-		glm::vec3 camPos    = camTarget +
-							  CamRadius * glm::vec3(cos(CamPitch) * sin(CamYaw),
-													sin(CamPitch),
-													cos(CamPitch) * cos(CamYaw));
-		glm::mat4 View = glm::lookAt(camPos, camTarget, glm::vec3(0,1,0));
+
+        const float camHeight = 0.25;
+        const float camDist = 15.0;
+        const float camPitch = 0.1f;
+        const float FOVy = glm::radians(45.0f);
+        const float nearPlane = 0.1f;
+        const float farPlane = 100.f;
+
+        static auto* const plane = new Plane(userInputs);
+
+        glm::mat4 worldMat = plane->computeWorldMatrix();
+        glm::vec3 camPos = computeCameraPosition(worldMat, camDist, camHeight, camPitch);
+        glm::vec3 planePos = plane->getPositionInWorldCoordinates();
+        glm::mat4 viewMat = glm::lookAt(camPos, planePos, glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 projMat = glm::perspective(FOVy, Ar, nearPlane, farPlane);
+        projMat[1][1] *= -1;
 
 		gubo.DlightDir = glm::normalize(glm::vec3(1, 2, 3));
 		gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 		gubo.AmbLightColor = glm::vec3(0.1f);
-		gubo.eyePos = camPos;
-
+		gubo.eyePos = glm::vec3(100.0, 100.0, 100.0);
 		// Writes value to the GPU
 		DSGubo.map(currentImage, &gubo, sizeof(gubo), 0);
 		// the .map() method of a DataSet object, requires the current image of the swap chain as first parameter
@@ -484,26 +406,24 @@ class SlotMachine : public BaseProject {
          * has its own Model View Projection matrix (mvpMat), as you see below, and they all move using the World matrix
          */
 
-        glm::mat4 World = glm::mat4(1);
+        glm::mat4 parkWorldMat = glm::mat4(1);
         for (int i = 0; i < uboPark.size(); ++i) {
             glm::vec3 trasl = {0, 0, 0};
             if (i == 1) trasl = {16.0, 0, 0};
             if (i == 2) trasl = {0, 0, 16.0};
             if (i == 3) trasl = {16.0, 0, 16.0};
-            World = glm::translate(glm::mat4(1), trasl);
+            parkWorldMat = glm::translate(glm::mat4(1), trasl);
             uboPark[i].amb = 1.0f; uboPark[i].gamma = 180.0f; uboPark[i].sColor = glm::vec3(1.0f);
-            uboPark[i].mvpMat = Prj * View * World;
-            uboPark[i].mMat = World;
-            uboPark[i].nMat = glm::inverse(glm::transpose(World));
+            uboPark[i].mvpMat = projMat * viewMat * parkWorldMat;
+            uboPark[i].mMat = parkWorldMat;
+            uboPark[i].nMat = glm::inverse(glm::transpose(parkWorldMat));
             DSPark[i].map(currentImage, &uboPark[i], sizeof(uboPark[i]), 0);
         }
-	
-		World = glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.3f,0.5f,-0.15f)),
-							HandleRot, glm::vec3(1,0,0)), glm::vec3(0.1));
+
         uboPlane.amb = 1.0f; uboPlane.gamma = 180.0f; uboPlane.sColor = glm::vec3(1.0f);
-        uboPlane.mvpMat = Prj * View * World;
-        uboPlane.mMat = World;
-        uboPlane.nMat = glm::inverse(glm::transpose(World));
+        uboPlane.mvpMat = projMat * viewMat * worldMat;
+        uboPlane.mMat = worldMat;
+        uboPlane.nMat = glm::inverse(glm::transpose(worldMat));
 		DSPlane.map(currentImage, &uboPlane, sizeof(uboPlane), 0);
 
 		uboKey.visible = (gameState == 1) ? 1.0f : 0.0f;
@@ -511,7 +431,28 @@ class SlotMachine : public BaseProject {
 
 		uboSplash.visible = (gameState == 0) ? 1.0f : 0.0f;
 		DSSplash.map(currentImage, &uboSplash, sizeof(uboSplash), 0);
-	}	
+	}
+
+    /**
+    * @param world world transform matrix
+    * @param camDistance distance from tracked object in object's coordinates
+    * @param camHeight height from tracked object in object's coordinates
+    * @param camPitch pitch in radians
+    * @return camera position in world coordinates
+    */
+    static vec3 computeCameraPosition(const mat4& world, float camDistance, float camHeight, float camPitch) {
+        const float MIN_CAM_HEIGHT_WORLD_COORDINATES = 0.5;
+
+        vec3 position =
+                world *
+                glm::vec4(- camDistance * std::cos(camPitch),
+                          camHeight + camDistance * std::sin(camPitch),
+                          0.0f,
+                          1);
+
+        position.y = std::max(position.y, 0.5f); // avoids camera from going below the ground level
+        return position;
+    }
 };
 
 
