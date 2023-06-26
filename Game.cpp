@@ -46,7 +46,7 @@ struct VertexOverlay {
 };
 
 // MAIN ! 
-class SlotMachine : public BaseProject {
+class Game : public BaseProject {
 	protected:
 
 	// Current aspect ratio (used by the callback that resized the window
@@ -91,7 +91,7 @@ class SlotMachine : public BaseProject {
 		// window size, titile and initial background
 		windowWidth = 800;
 		windowHeight = 600;
-		windowTitle = "Slot Machine";
+		windowTitle = "Drone delivery";
     	windowResizable = GLFW_TRUE;
 		initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 		
@@ -459,7 +459,7 @@ class SlotMachine : public BaseProject {
 
 // This is the main: probably you do not need to touch this!
 int main() {
-    SlotMachine app;
+    Game app;
 
     try {
         app.run();
