@@ -65,26 +65,20 @@ class Game : public BaseProject {
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
-	Model<VertexMesh> MPlane; /** one per model **/
+	Model<VertexMesh> MPlane, MArrow; /** one per model **/
 	std::array<Model<VertexMesh>, 4> MPark;
 	Model<VertexOverlay> MKey, MSplash;
-	DescriptorSet DSGubo, DSPlane, DSKey, DSSplash; /** one per instance of model **/
+	DescriptorSet DSGubo, DSPlane, DSArrow, DSKey, DSSplash; /** one per instance of model **/
 	std::array<DescriptorSet, 4> DSPark;
-	Texture TCity, TPlane, TKey, TSplash;
+	Texture TCity, TPlane, TArrow, TKey, TSplash;
 	
 	// C++ storage for uniform variables
-	MeshUniformBlock uboPlane;
+	MeshUniformBlock uboPlane, uboArrow;
     std::array<MeshUniformBlock, 4> uboPark;
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboKey, uboSplash;
 
-	// Other application parameters
-	float CamH, CamRadius, CamPitch, CamYaw;
 	int gameState;
-	float HandleRot = 0.0;
-	float Wheel1Rot = 0.0;
-	float Wheel2Rot = 0.0;
-	float Wheel3Rot = 0.0;
 
 	// Here you set the main application parameters
 	void setWindowParameters() {
@@ -96,9 +90,9 @@ class Game : public BaseProject {
 		initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 8;
-		texturesInPool = 7;
-		setsInPool = 8;
+		uniformBlocksInPool = 9;
+		texturesInPool = 8;
+		setsInPool = 9;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 	}
@@ -199,6 +193,7 @@ class Game : public BaseProject {
         }
 
 		MPlane.init(this, &VMesh, "Models/plane_001.mgcg", MGCG);
+        MArrow.init(this, &VMesh, "Models/arrow.obj", OBJ);
 
 		// Creates a mesh with direct enumeration of vertices and indices
 		MKey.vertices = {{{-0.8f, 0.6f}, {0.0f,0.0f}}, {{-0.8f, 0.95f}, {0.0f,1.0f}},
@@ -216,14 +211,10 @@ class Game : public BaseProject {
 		// The second parameter is the file name
 		TCity.init(this, "textures/Textures_City.png");
 		TPlane.init(this, "textures/Textures_City.png");
+        TArrow.init(this, "textures/arrow.png");
 		TKey.init(this,    "textures/PressSpace.png");
 		TSplash.init(this, "textures/SplashScreen.png");
-		
-		// Init local variables
-		CamH = 1.0f;
-		CamRadius = 3.0f;
-		CamPitch = glm::radians(15.f);
-		CamYaw = glm::radians(30.f);
+
 		gameState = 0;
 	}
 	
@@ -243,6 +234,10 @@ class Game : public BaseProject {
 					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TPlane}
 				});
+        DSArrow.init(this, &DSLMesh, {
+                {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+                {1, TEXTURE, 0, &TArrow}
+        });
 		DSKey.init(this, &DSLOverlay, {
 					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TKey}
@@ -269,7 +264,7 @@ class Game : public BaseProject {
         }
 
 		DSPlane.cleanup();
-
+        DSArrow.cleanup();
 		DSKey.cleanup();
 		DSSplash.cleanup();
 		DSGubo.cleanup();
@@ -283,6 +278,7 @@ class Game : public BaseProject {
 		// Cleanup textures
 		TCity.cleanup();
 		TPlane.cleanup();
+        TArrow.cleanup();
 		TKey.cleanup();
 		TSplash.cleanup();
 		
@@ -292,6 +288,7 @@ class Game : public BaseProject {
         }
 
 		MPlane.cleanup();
+        MArrow.cleanup();
 		MKey.cleanup();
 		MSplash.cleanup();
 		
@@ -330,6 +327,11 @@ class Game : public BaseProject {
 		DSPlane.bind(commandBuffer, PMesh, 1, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MPlane.indices.size()), 1, 0, 0, 0);
+
+        MArrow.bind(commandBuffer);
+        DSArrow.bind(commandBuffer, PMesh, 1, currentImage);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MArrow.indices.size()), 1, 0, 0, 0);
 
 		POverlay.bind(commandBuffer);
 		MKey.bind(commandBuffer);
@@ -432,6 +434,12 @@ class Game : public BaseProject {
         uboPlane.mMat = worldMat;
         uboPlane.nMat = glm::inverse(glm::transpose(worldMat));
 		DSPlane.map(currentImage, &uboPlane, sizeof(uboPlane), 0);
+
+        uboArrow.amb = 1.0f; uboArrow.gamma = 180.0f; uboArrow.sColor = glm::vec3(1.0f);
+        uboArrow.mvpMat = projMat * viewMat * parkWorldMat;
+        uboArrow.mMat = parkWorldMat;
+        uboArrow.nMat = glm::inverse(glm::transpose(parkWorldMat));
+        DSArrow.map(currentImage, &uboArrow, sizeof(uboArrow), 0);
 
 		uboKey.visible = (gameState == 1) ? 1.0f : 0.0f;
 		DSKey.map(currentImage, &uboKey, sizeof(uboKey), 0);
