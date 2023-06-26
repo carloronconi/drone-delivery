@@ -383,6 +383,13 @@ class Game : public BaseProject {
 
         static auto* const plane = new Plane(userInputs);
 
+
+        /**
+         * MPark[0].vertices access map vertices for collision detection: finding top 3 closest vertices to player not enough
+         * because you can't know if the condition to enforce is player.xyz >< terrain.xyz,
+         * but you can find the vertex "terrain" with closest xz and enforce that player.y > terrain.y
+         */
+
         glm::mat4 worldMat = plane->computeWorldMatrix();
         glm::vec3 camPos = computeCameraPosition(worldMat, camDist, camHeight, camPitch);
         glm::vec3 planePos = plane->getPositionInWorldCoordinates();

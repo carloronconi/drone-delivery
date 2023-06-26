@@ -131,7 +131,11 @@ public:
 
         position += speed * inputs.deltaT;
 
-        if (position.y < 0) {
+        /**
+         * compute the terrain.y of the closest xz point of terrain mesh and then change comparison below to position.y < terrain.y
+         */
+
+        if (position.y < 0) { // simple collision detection
             position.y = 0;
             speed.y = 0;
 
