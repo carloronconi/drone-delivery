@@ -38,7 +38,7 @@ private:
     const float MAX_SPEED = 10.0f;
     // plane physics parameters
     const float PLANE_CENTER_OF_LIFT = 1.5f;
-    const float PLANE_SCALE = 0.5f;
+    const float PLANE_SCALE = 0.1f;
     const float MAX_WING_LIFT = 5.5f;
     const float WING_LIFT_ANGLE = glm::radians(30.0f);
     const float WING_INEFFICIENCY = 1.1f;
@@ -148,7 +148,7 @@ public:
         debugInfo["Plane speed"] = planeSpeed;
         printDebugInfo(debugInfo);
 
-        return lastWorldMatrix * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0,1,0));
+        return lastWorldMatrix * rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0,1,0));
     }
 
     /**

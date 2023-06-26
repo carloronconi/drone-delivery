@@ -375,7 +375,7 @@ class SlotMachine : public BaseProject {
 		}
 
         const float camHeight = 0.25;
-        const float camDist = 15.0;
+        const float camDist = 25.0;
         const float camPitch = 0.1f;
         const float FOVy = glm::radians(45.0f);
         const float nearPlane = 0.1f;
