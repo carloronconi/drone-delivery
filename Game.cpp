@@ -65,15 +65,15 @@ class Game : public BaseProject {
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
-	Model<VertexMesh> MPlane, MArrow; /** one per model **/
+	Model<VertexMesh> MPlane, MArrow, MBox; /** one per model **/
 	std::array<Model<VertexMesh>, 4> MPark;
 	Model<VertexOverlay> MKey, MSplash;
-	DescriptorSet DSGubo, DSPlane, DSArrow, DSKey, DSSplash; /** one per instance of model **/
+	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSKey, DSSplash; /** one per instance of model **/
 	std::array<DescriptorSet, 4> DSPark;
 	Texture TCity, TArrow, TKey, TSplash;
 	
 	// C++ storage for uniform variables
-	MeshUniformBlock uboPlane, uboArrow;
+	MeshUniformBlock uboPlane, uboArrow, uboBox;
     std::array<MeshUniformBlock, 4> uboPark;
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboKey, uboSplash;
@@ -90,9 +90,9 @@ class Game : public BaseProject {
 		initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 9;
-		texturesInPool = 8;
-		setsInPool = 9;
+		uniformBlocksInPool = 10;
+		texturesInPool = 9;
+		setsInPool = 10;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 	}
@@ -194,6 +194,7 @@ class Game : public BaseProject {
 
 		MPlane.init(this, &VMesh, "Models/plane_001.mgcg", MGCG);
         MArrow.init(this, &VMesh, "Models/arrow.obj", OBJ);
+        MBox.init(this, &VMesh, "Models/box_005.mgcg", MGCG);
 
 		// Creates a mesh with direct enumeration of vertices and indices
 		MKey.vertices = {{{-0.8f, 0.6f}, {0.0f,0.0f}}, {{-0.8f, 0.95f}, {0.0f,1.0f}},
@@ -237,6 +238,10 @@ class Game : public BaseProject {
                 {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
                 {1, TEXTURE, 0, &TArrow}
         });
+        DSBox.init(this, &DSLMesh, {
+                {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+                {1, TEXTURE, 0, &TCity}
+        });
 		DSKey.init(this, &DSLOverlay, {
 					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TKey}
@@ -263,6 +268,7 @@ class Game : public BaseProject {
         }
 
 		DSPlane.cleanup();
+        DSBox.cleanup();
         DSArrow.cleanup();
 		DSKey.cleanup();
 		DSSplash.cleanup();
@@ -286,6 +292,7 @@ class Game : public BaseProject {
         }
 
 		MPlane.cleanup();
+        MBox.cleanup();
         MArrow.cleanup();
 		MKey.cleanup();
 		MSplash.cleanup();
@@ -330,6 +337,11 @@ class Game : public BaseProject {
         DSArrow.bind(commandBuffer, PMesh, 1, currentImage);
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MArrow.indices.size()), 1, 0, 0, 0);
+
+        MBox.bind(commandBuffer);
+        DSBox.bind(commandBuffer, PMesh, 1, currentImage);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MBox.indices.size()), 1, 0, 0, 0);
 
 		POverlay.bind(commandBuffer);
 		MKey.bind(commandBuffer);
@@ -447,6 +459,12 @@ class Game : public BaseProject {
         uboArrow.mMat = arrowWorldMat;
         uboArrow.nMat = glm::inverse(glm::transpose(arrowWorldMat));
         DSArrow.map(currentImage, &uboArrow, sizeof(uboArrow), 0);
+
+        uboBox.amb = 1.0f; uboBox.gamma = 180.0f; uboBox.sColor = glm::vec3(1.0f);
+        uboBox.mvpMat = projMat * viewMat * parkWorldMat;
+        uboBox.mMat = parkWorldMat;
+        uboBox.nMat = glm::inverse(glm::transpose(parkWorldMat));
+        DSBox.map(currentImage, &uboBox, sizeof(uboBox), 0);
 
 		uboKey.visible = (gameState == 1) ? 1.0f : 0.0f;
 		DSKey.map(currentImage, &uboKey, sizeof(uboKey), 0);
