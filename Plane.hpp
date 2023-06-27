@@ -29,7 +29,7 @@ private:
     vec3 planeCoordinatesFriction{5, 1, 1};
 
     // reference to command inputs used to update the world matrix
-    UserInputs& inputs;
+    const UserInputs& inputs;
 
     // constants
     // rotation and motion speed
@@ -44,6 +44,10 @@ private:
     const float WING_INEFFICIENCY = 1.1f;
     const bool PRINT_DEBUG = false;
 
+    // list of vertices of models for which we want collision detection
+    vector<vec3> verticesToAvoid;
+    const float COLLISION_DISTANCE = 20.0f;
+
     /**
      * computes the module of the lift acceleration produced by a wing
      * @param orthogonalSpeed module of the plane speed orthogonal to the wing surface
@@ -56,6 +60,26 @@ private:
             return (- (MAX_WING_LIFT / (MAX_SPEED * MAX_SPEED)) * orthogonalSpeed + 2 * MAX_WING_LIFT / MAX_SPEED) * orthogonalSpeed;
         }
         return MAX_WING_LIFT;
+    }
+
+    /**
+     * Collision detection algorithm
+     * Simple technique based on plane position and on the vertices of the models that the plane has to avoid: find the vertex with
+     * the highest y value among those with x and y "close" to the plane. If its y is higher than the plane's, it means a collision
+     * has happened.
+     * The big simplification here is that if the model has very few vertices very far apart (e.g. a simple big cube) a collision would
+     * not be detected if the plane collided in the middle of the cube's face, because no vertex would be found close to the plane.
+     */
+    bool isCollisionDetected() {
+        if (position.y < 0) return true; // simplest case: don't go below the ground
+        glm::vec3 highestPoint = {0.0, -1.0, 0.0};
+        for (auto p : verticesToAvoid) {
+            if (glm::length(vec2(p.x, p.z) - vec2(position.x, position.z)) < COLLISION_DISTANCE && p.z > highestPoint.z) {
+                highestPoint = p;
+            }
+        }
+        if (highestPoint.y > position.y) cout << "COLLISION WITH HOUSE DETECTED";
+        return highestPoint.y > position.y;
     }
 
     void updateUAxes() {
@@ -96,10 +120,11 @@ private:
     }
 
 public:
-    Plane(UserInputs &inputs, const vec3 &initialPosition = vec3(0), const quat &initialRotation = quat(1, 0, 0, 0)) :
+    Plane(UserInputs &inputs, const vector<vec3>& collisionDetectionVertices = {}, const vec3 &initialPosition = vec3(0), const quat &initialRotation = quat(1, 0, 0, 0)) :
             position(initialPosition),
             rotation(initialRotation),
-            inputs(inputs) {}
+            inputs(inputs),
+            verticesToAvoid(collisionDetectionVertices) {}
 
     /**
      * computes the world matrix for a new frame using the command inputs and stores it internally for other functions
@@ -136,7 +161,7 @@ public:
          * compute the terrain.y of the closest xz point of terrain mesh and then change comparison below to position.y < terrain.y
          */
 
-        if (position.y < 0) { // simple collision detection
+        if (isCollisionDetected()) {
             position.y = 0;
             speed.y = 0;
 

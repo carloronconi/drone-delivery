@@ -44,6 +44,7 @@ class Game : public BaseProject {
     glm::vec3 targetPos;
     const int RANGE = 32;
     const int START = -16;
+    std::vector<glm::vec3> collisionDetectionVertices;
 
 	// Here you set the main application parameters
 	void setWindowParameters() {
@@ -66,6 +67,14 @@ class Game : public BaseProject {
 	void onWindowResize(int w, int h) {
 		Ar = (float)w / (float)h;
 	}
+
+    void initGameLogic() {
+        gameState = 0;
+        targetPos.x = static_cast<float>(rand() % RANGE + START);
+        targetPos.y = 0;
+        targetPos.z = static_cast<float>(rand() % RANGE + START);
+
+    }
 	
 	// Here you load and setup all your Vulkan Models and Texutures.
 	// Here you also create your Descriptor set layouts and load the shaders for the pipelines
@@ -182,10 +191,7 @@ class Game : public BaseProject {
 		TKey.init(this,    "textures/PressSpace.png");
 		TSplash.init(this, "textures/SplashScreen.png");
 
-		gameState = 0;
-        targetPos.x = static_cast<float>(rand() % RANGE + START);
-        targetPos.y = 0;
-        targetPos.z = static_cast<float>(rand() % RANGE + START);
+		initGameLogic();
 	}
 	
 	// Here you create your pipelines and Descriptor Sets!
@@ -375,8 +381,7 @@ class Game : public BaseProject {
         const float nearPlane = 0.1f;
         const float farPlane = 100.f;
 
-        static auto* const plane = new Plane(userInputs);
-
+        static auto* const plane = new Plane(userInputs, collisionDetectionVertices);
 
         /**
          * MPark[0].vertices access map vertices for collision detection: finding top 3 closest vertices to player not enough
@@ -420,6 +425,9 @@ class Game : public BaseProject {
             uboPark[i].mMat = parkWorldMat;
             uboPark[i].nMat = glm::inverse(glm::transpose(parkWorldMat));
             DSPark[i].map(currentImage, &uboPark[i], sizeof(uboPark[i]), 0);
+        }
+        for (auto v : MPark[0].vertices) {
+            collisionDetectionVertices.push_back(v.pos + translations[0]);
         }
 
         uboPlane.amb = 1.0f; uboPlane.gamma = 180.0f; uboPlane.sColor = glm::vec3(1.0f);
