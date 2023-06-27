@@ -45,6 +45,11 @@ class Game : public BaseProject {
     const int RANGE = 32;
     const int START = -16;
     std::vector<glm::vec3> collisionDetectionVertices;
+    const std::array<glm::vec3, 4> parkTranslations = {
+            glm::vec3(32, 0, 32),
+            glm::vec3(16, 0, -16),
+            glm::vec3(-16, 0, 16),
+            glm::vec3(-16, 0, -16)};
 
 	// Here you set the main application parameters
 	void setWindowParameters() {
@@ -73,7 +78,9 @@ class Game : public BaseProject {
         targetPos.x = static_cast<float>(rand() % RANGE + START);
         targetPos.y = 0;
         targetPos.z = static_cast<float>(rand() % RANGE + START);
-
+        for (auto v : MPark[0].vertices) {
+            collisionDetectionVertices.push_back(v.pos + parkTranslations[0]);
+        }
     }
 	
 	// Here you load and setup all your Vulkan Models and Texutures.
@@ -413,21 +420,13 @@ class Game : public BaseProject {
          */
 
         static glm::mat4 parkWorldMat = glm::mat4(1);
-        static std::array<glm::vec3, 4> translations = {
-                glm::vec3(32, 0, 32),
-                glm::vec3(16, 0, -16),
-                glm::vec3(-16, 0, 16),
-                glm::vec3(-16, 0, -16)};
         for (int i = 0; i < uboPark.size(); ++i) {
-            parkWorldMat = glm::translate(glm::mat4(1), translations[i]);
+            parkWorldMat = glm::translate(glm::mat4(1), parkTranslations[i]);
             uboPark[i].amb = 1.0f; uboPark[i].gamma = 180.0f; uboPark[i].sColor = glm::vec3(1.0f);
             uboPark[i].mvpMat = projMat * viewMat * parkWorldMat;
             uboPark[i].mMat = parkWorldMat;
             uboPark[i].nMat = glm::inverse(glm::transpose(parkWorldMat));
             DSPark[i].map(currentImage, &uboPark[i], sizeof(uboPark[i]), 0);
-        }
-        for (auto v : MPark[0].vertices) {
-            collisionDetectionVertices.push_back(v.pos + translations[0]);
         }
 
         uboPlane.amb = 1.0f; uboPlane.gamma = 180.0f; uboPlane.sColor = glm::vec3(1.0f);

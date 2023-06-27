@@ -46,7 +46,7 @@ private:
 
     // list of vertices of models for which we want collision detection
     vector<vec3> verticesToAvoid;
-    const float COLLISION_DISTANCE = 20.0f;
+    const float COLLISION_DISTANCE = 1.0f;
 
     /**
      * computes the module of the lift acceleration produced by a wing
@@ -78,7 +78,7 @@ private:
                 highestPoint = p;
             }
         }
-        if (highestPoint.y > position.y) cout << "COLLISION WITH HOUSE DETECTED";
+        if (highestPoint.y > position.y) cout << "COLLISION WITH HOUSE DETECTED\n";
         return highestPoint.y > position.y;
     }
 
