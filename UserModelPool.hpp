@@ -15,10 +15,10 @@ class UserModel {
 private:
     Model<VertexType> model;
     DescriptorSet ds;
-    const DescriptorSetLayout& DSL;
-    const VertexDescriptor vDescriptor;
-    const Pipeline& pipeline;
-    const Texture& texture;
+    DescriptorSetLayout* DSL;
+    VertexDescriptor* vDescriptor;
+    Pipeline* pipeline;
+    Texture* texture;
     BaseProject* bp;
     ModelType MOD_TYPE;
     std::string fileName;
@@ -27,8 +27,8 @@ private:
 public:
     UboType ubo;
 
-    UserModel(const VertexDescriptor &vDescriptor, const Pipeline &pipeline,
-              const DescriptorSetLayout &DSL, const Texture &texture,
+    UserModel(VertexDescriptor *vDescriptor, Pipeline *pipeline,
+              DescriptorSetLayout *DSL, Texture *texture,
               std::string fileName, ModelType MOD_TYPE, BaseProject *bp) :
               vDescriptor(vDescriptor),
               pipeline(pipeline),
@@ -39,7 +39,7 @@ public:
               bp(bp){}
 
     void initModel() {
-        model.init(bp, &vDescriptor, fileName, MOD_TYPE);
+        model.init(bp, vDescriptor, fileName, MOD_TYPE);
     }
     void initDS() {
         ds.init(bp, &DSL, {
@@ -50,7 +50,7 @@ public:
         ds.cleanup();
     }
     void cleanupModel() {
-        model.override();
+        model.cleanup();
     }
     void bind(VkCommandBuffer commandBuffer, int currentImage) {
         model.bind(commandBuffer);
