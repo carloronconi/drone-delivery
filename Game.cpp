@@ -41,6 +41,9 @@ class Game : public BaseProject {
 	OverlayUniformBlock uboKey, uboSplash;
 
 	int gameState;
+    glm::vec3 targetPos;
+    const int RANGE = 32;
+    const int START = -16;
 
 	// Here you set the main application parameters
 	void setWindowParameters() {
@@ -180,6 +183,9 @@ class Game : public BaseProject {
 		TSplash.init(this, "textures/SplashScreen.png");
 
 		gameState = 0;
+        targetPos.x = static_cast<float>(rand() % RANGE + START);
+        targetPos.y = 0;
+        targetPos.z = static_cast<float>(rand() % RANGE + START);
 	}
 	
 	// Here you create your pipelines and Descriptor Sets!
@@ -403,7 +409,7 @@ class Game : public BaseProject {
 
         static glm::mat4 parkWorldMat = glm::mat4(1);
         static std::array<glm::vec3, 4> translations = {
-                glm::vec3(16, 0, 16),
+                glm::vec3(32, 0, 32),
                 glm::vec3(16, 0, -16),
                 glm::vec3(-16, 0, 16),
                 glm::vec3(-16, 0, -16)};
@@ -422,18 +428,13 @@ class Game : public BaseProject {
         uboPlane.nMat = glm::inverse(glm::transpose(worldMat));
 		DSPlane.map(currentImage, &uboPlane, sizeof(uboPlane), 0);
 
-        static glm::mat4 arrowWorldMat = glm::translate(glm::mat4(1), glm::vec3{3, 5, 3});
-        const int RANGE = 32;
-        const int START = -16;
-        glm::vec3 targetPos = {0, 0, 0};
         static auto* const box = new Package(userInputs, plane->getPositionInWorldCoordinates(), plane->getSpeedInWorldCoordinates(), targetPos);
 
         if (box->isTargetHit()) {
-            targetPos.x = static_cast<float>(rand() % RANGE + START) ;
-            targetPos.z = static_cast<float>(rand() % RANGE + START) ;
-            arrowWorldMat = glm::translate(arrowWorldMat, targetPos);
-            cout << "\n\n\nTARGET HIT!\n\n\n";
+            targetPos.x = static_cast<float>(rand() % RANGE + START);
+            targetPos.z = static_cast<float>(rand() % RANGE + START);
         }
+        glm::mat4 arrowWorldMat = glm::translate(glm::mat4(1), glm::vec3(targetPos.x, 1, targetPos.z));
         uboArrow.amb = 1.0f; uboArrow.gamma = 180.0f; uboArrow.sColor = glm::vec3(1.0f);
         uboArrow.mvpMat = projMat * viewMat * arrowWorldMat;
         uboArrow.mMat = arrowWorldMat;

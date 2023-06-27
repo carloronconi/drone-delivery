@@ -26,7 +26,7 @@ private:
     // e.g. gravity plus x-wind would be (2.5, -9.81, 0)
     mat3 uAxes;
 
-    // friction deceleration in plane coordinates
+    // friction deceleration in object coordinates
     vec3 planeCoordinatesFriction{5, 1, 1};
 
     // reference to command inputs used to update the world matrix
@@ -46,15 +46,6 @@ private:
     State state;
     const float TARGET_PRECISION = 10.0f;
 
-    /**
-     * computes the module of the lift acceleration produced by a wing
-     * @param orthogonalSpeed module of the plane speed orthogonal to the wing surface
-     * @return lift acceleration produced by the wing
-     */
-    float wingLiftFunction(float orthogonalSpeed) const {
-        return 0.0;
-    }
-
     void updateUAxes() {
         // unitary-length axes xyz in plane coordinate rotated to xyz axes in world space
         // used to pass from plane's coordinate system to world coordinate system
@@ -65,7 +56,7 @@ private:
     }
 
 public:
-    Package(UserInputs &inputs, const vec3 &planePosition, const vec3 &planeSpeed, const vec3 &targetPosition) :
+    Package(UserInputs &inputs, const vec3 &planePosition, const vec3 &planeSpeed, const vec3&  targetPosition) :
             planePosition(planePosition),
             planeSpeed(planeSpeed),
             targetPosition(targetPosition),
@@ -116,7 +107,13 @@ public:
             }
             case ground:
                 state = held;
-                if (glm::length(position - targetPosition) < TARGET_PRECISION) hitTarget = true;
+                cout << "Package position: " << position.x << " " << position.y << " " << position.z << "\n";
+                cout << "Target position: " << targetPosition.x << " " << targetPosition.y << " " << targetPosition.z << "\n";
+                if (glm::length(position - targetPosition) < TARGET_PRECISION) {
+                    hitTarget = true; cout << "\nTARGET HIT!\n";
+                } else {
+                    cout << "\nTarget missed :(\n";
+                }
                 return translate(mat4(1), position) * glm::scale(glm::mat4(1), glm::vec3(PLANE_SCALE));
         }
     }

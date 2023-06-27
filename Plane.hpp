@@ -42,6 +42,7 @@ private:
     const float MAX_WING_LIFT = 5.5f;
     const float WING_LIFT_ANGLE = glm::radians(30.0f);
     const float WING_INEFFICIENCY = 1.1f;
+    const bool PRINT_DEBUG = false;
 
     /**
      * computes the module of the lift acceleration produced by a wing
@@ -148,9 +149,10 @@ public:
                           glm::scale(glm::mat4(1), glm::vec3(PLANE_SCALE)) * //additional transform to scale down the character in character space
                           glm::translate(glm::mat4(1), glm::vec3(0.0, - PLANE_CENTER_OF_LIFT, 0.0));
 
+
         map<string, vec3> debugInfo;
         debugInfo["Plane speed"] = planeSpeed;
-        printDebugInfo(debugInfo);
+        if (PRINT_DEBUG) printDebugInfo(debugInfo);
 
         return lastWorldMatrix * rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0,1,0));
     }
