@@ -141,13 +141,14 @@ class Game : public BaseProject {
  								    VK_CULL_MODE_NONE, false);
 
 		// Models, textures and Descriptors (values assigned to the uniforms)
-        meshModelPool.models.emplace_back(&VMesh, &PMesh, &DSLMesh, &TCity, "Models/park_001.mgcg", MGCG, this);
-        meshModelPool.models.emplace_back(&VMesh, &PMesh, &DSLMesh, &TCity, "Models/park_002.mgcg", MGCG, this);
-        meshModelPool.models.emplace_back(&VMesh, &PMesh, &DSLMesh, &TCity, "Models/park_003.mgcg", MGCG, this);
-        meshModelPool.models.emplace_back(&VMesh, &PMesh, &DSLMesh, &TCity, "Models/park_004.mgcg", MGCG, this);
-        meshModelPool.models.emplace_back(&VMesh, &PMesh, &DSLMesh, &TCity, "Models/plane_001.mgcg", MGCG, this);
-        meshModelPool.models.emplace_back(&VMesh, &PMesh, &DSLMesh, &TArrow, "Models/arrow.obj", OBJ, this);
-        meshModelPool.models.emplace_back(&VMesh, &PMesh, &DSLMesh, &TCity, "Models/box_005.mgcg", MGCG, this);
+        meshModelPool = UserModelPool<VertexMesh, MeshUniformBlock>(&VMesh, &PMesh, &DSLMesh, this);
+        meshModelPool.models.emplace_back(&TCity, "Models/park_001.mgcg", MGCG);
+        meshModelPool.models.emplace_back(&TCity, "Models/park_002.mgcg", MGCG);
+        meshModelPool.models.emplace_back(&TCity, "Models/park_003.mgcg", MGCG);
+        meshModelPool.models.emplace_back(&TCity, "Models/park_004.mgcg", MGCG);
+        meshModelPool.models.emplace_back(&TCity, "Models/plane_001.mgcg", MGCG);
+        meshModelPool.models.emplace_back(&TArrow, "Models/arrow.obj", OBJ);
+        meshModelPool.models.emplace_back(&TCity, "Models/box_005.mgcg", MGCG);
 
         meshModelPool.initAllModels();
 
@@ -247,7 +248,7 @@ class Game : public BaseProject {
 		PMesh.bind(commandBuffer);
 		// For a pipeline object, this command binds the corresponing pipeline to the command buffer passed in its parameter
 
-		meshModelPool.bindAll(commandBuffer, currentImage);
+		meshModelPool.bindAll(&commandBuffer, currentImage);
 
 		POverlay.bind(commandBuffer);
 		MKey.bind(commandBuffer);
@@ -341,11 +342,11 @@ class Game : public BaseProject {
             if (i == 3) trasl = {16.0, 0, 16.0};
             parkWorldMat = glm::translate(glm::mat4(1), trasl);
             //meshModelPool.models[i].ubo.amb = 1.0f; meshModelPool.models[i].ubo.gamma = 180.0f; meshModelPool.models[i].ubo.sColor = glm::vec3(1.0f);
-            meshModelPool.models[i].map(parkWorldMat, viewMat, projMat);
+            meshModelPool.models[i].map(&parkWorldMat, &viewMat, &projMat);
         }
 
         /** plane **/
-        meshModelPool.models[4].map(worldMat, viewMat, projMat);
+        meshModelPool.models[4].map(&worldMat, &viewMat, &projMat);
 
         /** arrow **/
         static glm::mat4 arrowWorldMat = glm::translate(parkWorldMat, glm::vec3{3, 5, 3});
@@ -359,11 +360,11 @@ class Game : public BaseProject {
             arrowWorldMat = glm::translate(arrowWorldMat, targetPos);
             cout << "\n\n\nTARGET HIT!\n\n\n";
         }
-        meshModelPool.models[5].map(arrowWorldMat, viewMat, projMat);
+        meshModelPool.models[5].map(&arrowWorldMat, &viewMat, &projMat);
 
         /** box **/
         glm::mat4 boxWorldMat = box->computeWorldMatrix();
-        meshModelPool.models[6].map(boxWorldMat, viewMat, projMat);
+        meshModelPool.models[6].map(&boxWorldMat, &viewMat, &projMat);
 
 		uboKey.visible = (gameState == 1) ? 1.0f : 0.0f;
 		DSKey.map(currentImage, &uboKey, sizeof(uboKey), 0);

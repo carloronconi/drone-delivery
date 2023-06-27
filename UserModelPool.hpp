@@ -14,11 +14,7 @@ class UserModel {
 private:
     Model<VertexType> model;
     DescriptorSet ds;
-    DescriptorSetLayout* DSL;
-    VertexDescriptor* vDescriptor;
-    Pipeline* pipeline;
     Texture* texture;
-    BaseProject* bp;
     ModelType MOD_TYPE;
     std::string fileName;
     int currImage;
@@ -26,21 +22,15 @@ private:
 public:
     UboType ubo;
 
-    UserModel(VertexDescriptor *vDescriptor, Pipeline *pipeline,
-              DescriptorSetLayout *DSL, Texture *texture,
-              std::string fileName, ModelType MOD_TYPE, BaseProject *bp) :
-              vDescriptor(vDescriptor),
-              pipeline(pipeline),
-              DSL(DSL),
+    UserModel(Texture *texture, std::string fileName, ModelType MOD_TYPE) :
               texture(texture),
               fileName(std::move(fileName)),
-              MOD_TYPE(MOD_TYPE),
-              bp(bp){}
+              MOD_TYPE(MOD_TYPE){}
 
-    void initModel() {
+    void initModel(BaseProject *bp, VertexDescriptor *vDescriptor) {
         model.init(bp, vDescriptor, fileName, MOD_TYPE);
     }
-    void initDS() {
+    void initDS(BaseProject *bp, DescriptorSetLayout *DSL) {
         ds.init(bp, DSL, {
                 {0, UNIFORM, sizeof(UboType), nullptr},
                 {1, TEXTURE, 0, texture}});
@@ -51,35 +41,48 @@ public:
     void cleanupModel() {
         model.cleanup();
     }
-    void bind(VkCommandBuffer commandBuffer, int currentImage) {
-        model.bind(commandBuffer);
-        ds.bind(commandBuffer, *pipeline, 1, currentImage);
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model.indices.size()),
+    void bind(VkCommandBuffer *commandBuffer, int currentImage, Pipeline *pipeline) {
+        model.bind(*commandBuffer);
+        ds.bind(*commandBuffer, *pipeline, 1, currentImage);
+        vkCmdDrawIndexed(*commandBuffer, static_cast<uint32_t>(model.indices.size()),
                          1, 0, 0, 0);
         currImage = currentImage;
     }
-    void map(glm::mat4 world, glm::mat4 view, glm::mat4 projection) {
+    void map(glm::mat4 *world, glm::mat4 *view, glm::mat4 *projection) {
         ubo.amb = 1.0f; ubo.gamma = 180.0f; ubo.sColor = glm::vec3(1.0f);
-        ubo.mvpMat = projection * view * world;
-        ubo.mMat = world;
-        ubo.nMat = glm::inverse(glm::transpose(world));
+        ubo.mvpMat = *projection * *view * *world;
+        ubo.mMat = *world;
+        ubo.nMat = glm::inverse(glm::transpose(*world));
         ds.map(currImage, &ubo, sizeof(ubo), 0);
     }
 };
 
 template <typename VertexType, typename UboType>
 class UserModelPool {
+private:
+    VertexDescriptor* vDescriptor{};
+    Pipeline* pipeline{};
+    DescriptorSetLayout* DSL{};
+    BaseProject* bp{};
 public:
     std::vector<UserModel<VertexType, UboType>> models;
 
+    UserModelPool() = default;
+    UserModelPool(VertexDescriptor *vDescriptor, Pipeline *pipeline,
+                  DescriptorSetLayout *DSL, BaseProject *bp) :
+            vDescriptor(vDescriptor),
+            pipeline(pipeline),
+            DSL(DSL),
+            bp(bp){}
+
     void initAllModels() {
         for (auto &m : models) {
-            m.initModel();
+            m.initModel(bp, vDescriptor);
         }
     }
     void initAllDSs() {
         for (auto &m : models) {
-            m.initDS();
+            m.initDS(bp, DSL);
         }
     }
     void cleanupAllDSs() {
@@ -92,9 +95,9 @@ public:
             m.cleanupModel();
         }
     }
-    void bindAll(VkCommandBuffer commandBuffer, int currentImage) {
+    void bindAll(VkCommandBuffer *commandBuffer, int currentImage) {
         for (auto &m : models) {
-            m.bind(commandBuffer, currentImage);
+            m.bind(commandBuffer, currentImage, pipeline);
         }
     }
 };
