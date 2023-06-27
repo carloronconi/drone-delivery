@@ -146,7 +146,7 @@ class Game : public BaseProject {
         meshModelPool.models.emplace_back(&VMesh, &PMesh, &DSLMesh, &TCity, "Models/park_003.mgcg", MGCG, this);
         meshModelPool.models.emplace_back(&VMesh, &PMesh, &DSLMesh, &TCity, "Models/park_004.mgcg", MGCG, this);
         meshModelPool.models.emplace_back(&VMesh, &PMesh, &DSLMesh, &TCity, "Models/plane_001.mgcg", MGCG, this);
-        meshModelPool.models.emplace_back(&VMesh, &PMesh, &DSLMesh, &TCity, "Models/arrow_001.obj", OBJ, this);
+        meshModelPool.models.emplace_back(&VMesh, &PMesh, &DSLMesh, &TArrow, "Models/arrow.obj", OBJ, this);
         meshModelPool.models.emplace_back(&VMesh, &PMesh, &DSLMesh, &TCity, "Models/box_005.mgcg", MGCG, this);
 
         meshModelPool.initAllModels();

@@ -4,7 +4,6 @@
 
 #include <utility>
 
-#include "Starter.hpp"
 #include "DataStructs.hpp"
 
 #ifndef DRONE_DELIVERY_USERMODELPOOL_HPP
@@ -42,9 +41,9 @@ public:
         model.init(bp, vDescriptor, fileName, MOD_TYPE);
     }
     void initDS() {
-        ds.init(bp, &DSL, {
+        ds.init(bp, DSL, {
                 {0, UNIFORM, sizeof(UboType), nullptr},
-                {1, TEXTURE, 0, &texture}});
+                {1, TEXTURE, 0, texture}});
     }
     void cleanupDS() {
         ds.cleanup();
@@ -54,7 +53,7 @@ public:
     }
     void bind(VkCommandBuffer commandBuffer, int currentImage) {
         model.bind(commandBuffer);
-        ds.bind(commandBuffer, pipeline, 1, currentImage);
+        ds.bind(commandBuffer, *pipeline, 1, currentImage);
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model.indices.size()),
                          1, 0, 0, 0);
         currImage = currentImage;
