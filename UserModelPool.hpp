@@ -10,19 +10,8 @@
 #ifndef DRONE_DELIVERY_USERMODELPOOL_HPP
 #define DRONE_DELIVERY_USERMODELPOOL_HPP
 
-class ModelInterface {
-public:
-    virtual void initModel();
-    virtual void initDS();
-    virtual void cleanupDS();
-    virtual void cleanupModel();
-    virtual void bind(VkCommandBuffer commandBuffer, int currentImage);
-    virtual void map(float amb, float gamma, glm::vec3 color,
-                     glm::mat4 world, glm::mat4 view, glm::mat4 projection);
-};
-
 template <typename VertexType, typename UboType>
-class UserModel : public ModelInterface {
+class UserModel {
 private:
     Model<VertexType> model;
     DescriptorSet ds;
@@ -34,9 +23,9 @@ private:
     ModelType MOD_TYPE;
     std::string fileName;
     int currImage;
-    UboType ubo;
 
 public:
+    UboType ubo;
 
     UserModel(const VertexDescriptor &vDescriptor, const Pipeline &pipeline,
               const DescriptorSetLayout &DSL, const Texture &texture,
@@ -49,29 +38,28 @@ public:
               MOD_TYPE(MOD_TYPE),
               bp(bp){}
 
-    void initModel() override {
+    void initModel() {
         model.init(bp, &vDescriptor, fileName, MOD_TYPE);
     }
-    void initDS() override {
+    void initDS() {
         ds.init(bp, &DSL, {
                 {0, UNIFORM, sizeof(UboType), nullptr},
                 {1, TEXTURE, 0, &texture}});
     }
-    void cleanupDS() override {
+    void cleanupDS() {
         ds.cleanup();
     }
-    void cleanupModel() override {
+    void cleanupModel() {
         model.override();
     }
-    void bind(VkCommandBuffer commandBuffer, int currentImage) override {
+    void bind(VkCommandBuffer commandBuffer, int currentImage) {
         model.bind(commandBuffer);
         ds.bind(commandBuffer, pipeline, 1, currentImage);
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model.indices.size()),
                          1, 0, 0, 0);
         currImage = currentImage;
     }
-    void map(float amb, float gamma, glm::vec3 color,
-             glm::mat4 world, glm::mat4 view, glm::mat4 projection) override {
+    void map(glm::mat4 world, glm::mat4 view, glm::mat4 projection) {
         ubo.amb = 1.0f; ubo.gamma = 180.0f; ubo.sColor = glm::vec3(1.0f);
         ubo.mvpMat = projection * view * world;
         ubo.mMat = world;
@@ -80,11 +68,36 @@ public:
     }
 };
 
+template <typename VertexType, typename UboType>
 class UserModelPool {
-private:
-    std::vector<ModelInterface> models;
 public:
-    //getModel()
+    std::vector<UserModel<VertexType, UboType>> models;
+
+    void initAllModels() {
+        for (auto &m : models) {
+            m.initModel();
+        }
+    }
+    void initAllDSs() {
+        for (auto &m : models) {
+            m.initDS();
+        }
+    }
+    void cleanupAllDSs() {
+        for (auto &m : models) {
+            m.cleanupDS();
+        }
+    }
+    void cleanupAllModels() {
+        for (auto &m : models) {
+            m.cleanupModel();
+        }
+    }
+    void bindAll(VkCommandBuffer commandBuffer, int currentImage) {
+        for (auto &m : models) {
+            m.bind(commandBuffer, currentImage);
+        }
+    }
 };
 
 #endif //DRONE_DELIVERY_USERMODELPOOL_HPP
