@@ -27,15 +27,18 @@ class Game : public BaseProject {
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
-    UserModelPool<VertexMesh, MeshUniformBlock> meshModelPool;
-
-    /** do same as above for these two: UserModelPool<VertexOverlay, OverlayUniformBlock> overlayModelPool;**/
+	Model<VertexMesh> MPlane, MArrow, MBox; /** one per model **/
+	std::array<Model<VertexMesh>, 4> MPark;
 	Model<VertexOverlay> MKey, MSplash;
-	DescriptorSet DSGubo, DSKey, DSSplash;
-    OverlayUniformBlock uboKey, uboSplash;
-
+	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSKey, DSSplash; /** one per instance of model **/
+	std::array<DescriptorSet, 4> DSPark;
 	Texture TCity, TArrow, TKey, TSplash;
+	
+	// C++ storage for uniform variables
+	MeshUniformBlock uboPlane, uboArrow, uboBox;
+    std::array<MeshUniformBlock, 4> uboPark;
 	GlobalUniformBlock gubo;
+	OverlayUniformBlock uboKey, uboSplash;
 
 	int gameState;
 
@@ -141,15 +144,19 @@ class Game : public BaseProject {
  								    VK_CULL_MODE_NONE, false);
 
 		// Models, textures and Descriptors (values assigned to the uniforms)
-        meshModelPool.models.emplace_back(&VMesh, &PMesh, &DSLMesh, &TCity, "Models/park_001.mgcg", MGCG, this);
-        meshModelPool.models.emplace_back(&VMesh, &PMesh, &DSLMesh, &TCity, "Models/park_002.mgcg", MGCG, this);
-        meshModelPool.models.emplace_back(&VMesh, &PMesh, &DSLMesh, &TCity, "Models/park_003.mgcg", MGCG, this);
-        meshModelPool.models.emplace_back(&VMesh, &PMesh, &DSLMesh, &TCity, "Models/park_004.mgcg", MGCG, this);
-        meshModelPool.models.emplace_back(&VMesh, &PMesh, &DSLMesh, &TCity, "Models/plane_001.mgcg", MGCG, this);
-        meshModelPool.models.emplace_back(&VMesh, &PMesh, &DSLMesh, &TArrow, "Models/arrow.obj", OBJ, this);
-        meshModelPool.models.emplace_back(&VMesh, &PMesh, &DSLMesh, &TCity, "Models/box_005.mgcg", MGCG, this);
 
-        meshModelPool.initAllModels();
+		// Create models
+		// The second parameter is the pointer to the vertex definition for this model
+		// The third parameter is the file name
+		// The last is a constant specifying the file type: currently only OBJ or GLTF
+        for (int i = 0; i < MPark.size(); ++i) {
+            std::string modelFile = "Models/park_00" + std::to_string(i + 1) + ".mgcg";
+            MPark[i].init(this, &VMesh, modelFile, MGCG);
+        }
+
+		MPlane.init(this, &VMesh, "Models/plane_001.mgcg", MGCG);
+        MArrow.init(this, &VMesh, "Models/arrow.obj", OBJ);
+        MBox.init(this, &VMesh, "Models/box_005.mgcg", MGCG);
 
 		// Creates a mesh with direct enumeration of vertices and indices
 		MKey.vertices = {{{-0.8f, 0.6f}, {0.0f,0.0f}}, {{-0.8f, 0.95f}, {0.0f,1.0f}},
@@ -179,8 +186,24 @@ class Game : public BaseProject {
 		PMesh.create();
 		POverlay.create();
 
-        meshModelPool.initAllDSs();
+        for (auto &dsPark : DSPark) {
+            dsPark.init(this, &DSLMesh, {
+                {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+                {1, TEXTURE, 0, &TCity}});
+        }
 
+		DSPlane.init(this, &DSLMesh, {
+					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+					{1, TEXTURE, 0, &TCity}
+				});
+        DSArrow.init(this, &DSLMesh, {
+                {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+                {1, TEXTURE, 0, &TArrow}
+        });
+        DSBox.init(this, &DSLMesh, {
+                {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+                {1, TEXTURE, 0, &TCity}
+        });
 		DSKey.init(this, &DSLOverlay, {
 					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TKey}
@@ -201,8 +224,14 @@ class Game : public BaseProject {
 		PMesh.cleanup();
 		POverlay.cleanup();
 
-		meshModelPool.cleanupAllDSs();
+		// Cleanup datasets
+        for (auto &dsPark : DSPark) {
+            dsPark.cleanup();
+        }
 
+		DSPlane.cleanup();
+        DSBox.cleanup();
+        DSArrow.cleanup();
 		DSKey.cleanup();
 		DSSplash.cleanup();
 		DSGubo.cleanup();
@@ -219,8 +248,14 @@ class Game : public BaseProject {
 		TKey.cleanup();
 		TSplash.cleanup();
 		
-		meshModelPool.cleanupAllModels();
+		// Cleanup models
+        for (auto &mPark : MPark) {
+            mPark.cleanup();
+        }
 
+		MPlane.cleanup();
+        MBox.cleanup();
+        MArrow.cleanup();
 		MKey.cleanup();
 		MSplash.cleanup();
 		
@@ -247,7 +282,28 @@ class Game : public BaseProject {
 		PMesh.bind(commandBuffer);
 		// For a pipeline object, this command binds the corresponing pipeline to the command buffer passed in its parameter
 
-		meshModelPool.bindAll(commandBuffer, currentImage);
+		// binds the model
+        for (int i = 0; i < MPark.size(); ++i) {
+            MPark[i].bind(commandBuffer);
+            DSPark[i].bind(commandBuffer, PMesh, 1, currentImage);
+            vkCmdDrawIndexed(commandBuffer,
+                             static_cast<uint32_t>(MPark[i].indices.size()), 1, 0, 0, 0);
+        }
+
+        MPlane.bind(commandBuffer);
+		DSPlane.bind(commandBuffer, PMesh, 1, currentImage);
+		vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MPlane.indices.size()), 1, 0, 0, 0);
+
+        MArrow.bind(commandBuffer);
+        DSArrow.bind(commandBuffer, PMesh, 1, currentImage);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MArrow.indices.size()), 1, 0, 0, 0);
+
+        MBox.bind(commandBuffer);
+        DSBox.bind(commandBuffer, PMesh, 1, currentImage);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MBox.indices.size()), 1, 0, 0, 0);
 
 		POverlay.bind(commandBuffer);
 		MKey.bind(commandBuffer);
@@ -332,38 +388,50 @@ class Game : public BaseProject {
          * has its own Model View Projection matrix (mvpMat), as you see below, and they all move using the World matrix
          */
 
-        /** 4 park tiles **/
         static glm::mat4 parkWorldMat = glm::mat4(1);
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < uboPark.size(); ++i) {
             glm::vec3 trasl = {0, 0, 0};
             if (i == 1) trasl = {16.0, 0, 0};
             if (i == 2) trasl = {0, 0, 16.0};
             if (i == 3) trasl = {16.0, 0, 16.0};
             parkWorldMat = glm::translate(glm::mat4(1), trasl);
-            //meshModelPool.models[i].ubo.amb = 1.0f; meshModelPool.models[i].ubo.gamma = 180.0f; meshModelPool.models[i].ubo.sColor = glm::vec3(1.0f);
-            meshModelPool.models[i].map(parkWorldMat, viewMat, projMat);
+            uboPark[i].amb = 1.0f; uboPark[i].gamma = 180.0f; uboPark[i].sColor = glm::vec3(1.0f);
+            uboPark[i].mvpMat = projMat * viewMat * parkWorldMat;
+            uboPark[i].mMat = parkWorldMat;
+            uboPark[i].nMat = glm::inverse(glm::transpose(parkWorldMat));
+            DSPark[i].map(currentImage, &uboPark[i], sizeof(uboPark[i]), 0);
         }
 
-        /** plane **/
-        meshModelPool.models[4].map(worldMat, viewMat, projMat);
+        uboPlane.amb = 1.0f; uboPlane.gamma = 180.0f; uboPlane.sColor = glm::vec3(1.0f);
+        uboPlane.mvpMat = projMat * viewMat * worldMat;
+        uboPlane.mMat = worldMat;
+        uboPlane.nMat = glm::inverse(glm::transpose(worldMat));
+		DSPlane.map(currentImage, &uboPlane, sizeof(uboPlane), 0);
 
-        /** arrow **/
         static glm::mat4 arrowWorldMat = glm::translate(parkWorldMat, glm::vec3{3, 5, 3});
         const int RANGE = 10;
         const int START = -5;
         glm::vec3 targetPos = {0, 0, 0};
         static auto* const box = new Package(userInputs, plane->getPositionInWorldCoordinates(), plane->getSpeedInWorldCoordinates(), targetPos);
+
         if (box->isTargetHit()) {
             targetPos.x = static_cast<float>(rand() % RANGE + START) ;
             targetPos.z = static_cast<float>(rand() % RANGE + START) ;
             arrowWorldMat = glm::translate(arrowWorldMat, targetPos);
             cout << "\n\n\nTARGET HIT!\n\n\n";
         }
-        meshModelPool.models[5].map(arrowWorldMat, viewMat, projMat);
+        uboArrow.amb = 1.0f; uboArrow.gamma = 180.0f; uboArrow.sColor = glm::vec3(1.0f);
+        uboArrow.mvpMat = projMat * viewMat * arrowWorldMat;
+        uboArrow.mMat = arrowWorldMat;
+        uboArrow.nMat = glm::inverse(glm::transpose(arrowWorldMat));
+        DSArrow.map(currentImage, &uboArrow, sizeof(uboArrow), 0);
 
-        /** box **/
         glm::mat4 boxWorldMat = box->computeWorldMatrix();
-        meshModelPool.models[6].map(boxWorldMat, viewMat, projMat);
+        uboBox.amb = 1.0f; uboBox.gamma = 180.0f; uboBox.sColor = glm::vec3(1.0f);
+        uboBox.mvpMat = projMat * viewMat * boxWorldMat;
+        uboBox.mMat = boxWorldMat;
+        uboBox.nMat = glm::inverse(glm::transpose(boxWorldMat));
+        DSBox.map(currentImage, &uboBox, sizeof(uboBox), 0);
 
 		uboKey.visible = (gameState == 1) ? 1.0f : 0.0f;
 		DSKey.map(currentImage, &uboKey, sizeof(uboKey), 0);
