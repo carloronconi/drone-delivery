@@ -78,8 +78,10 @@ class Game : public BaseProject {
         targetPos.x = static_cast<float>(rand() % RANGE + START);
         targetPos.y = 0;
         targetPos.z = static_cast<float>(rand() % RANGE + START);
-        for (auto v : MPark[0].vertices) {
-            collisionDetectionVertices.push_back(v.pos + parkTranslations[0]);
+        for (int i = 0; i < MPark.size(); ++i) {
+            for (auto v : MPark[i].vertices) {
+                collisionDetectionVertices.push_back(v.pos + parkTranslations[i]);
+            }
         }
     }
 	
