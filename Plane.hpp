@@ -74,6 +74,8 @@ private:
         if (position.y < 0) return true; // simplest case: don't go below the ground
         glm::vec3 highestPoint = {0.0, -1.0, 0.0};
         for (auto p : verticesToAvoid) {
+            // this condition checks a vertical cylinder of points of radius COLLISION_DISTANCE and takes the point inside
+            // the cylinder with the highest y value
             if (glm::length(vec2(p.x, p.z) - vec2(position.x, position.z)) < COLLISION_DISTANCE && p.z > highestPoint.z) {
                 highestPoint = p;
             }
