@@ -44,7 +44,7 @@ private:
     const glm::vec3& targetPosition;
     bool hitTarget = false;
     State state;
-    const float TARGET_PRECISION = 5.0f;
+    const float TARGET_PRECISION = 10.0f;
 
     /**
      * computes the module of the lift acceleration produced by a wing
