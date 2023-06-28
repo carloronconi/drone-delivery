@@ -76,7 +76,7 @@ private:
         for (auto p : verticesToAvoid) {
             // this condition checks a vertical cylinder of points of radius COLLISION_DISTANCE and takes the point inside
             // the cylinder with the highest y value
-            if (glm::length(vec2(p.x, p.z) - vec2(position.x, position.z)) < COLLISION_DISTANCE && p.z > highestPoint.z) {
+            if (glm::length(vec2(p.x, p.z) - vec2(position.x, position.z)) < COLLISION_DISTANCE && p.y > highestPoint.y) {
                 highestPoint = p;
             }
         }
