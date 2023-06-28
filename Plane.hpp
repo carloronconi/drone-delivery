@@ -51,6 +51,7 @@ private:
     const float COLLISION_DISTANCE = 1.0f;
     Collision collision = NONE;
     const vec3 MESH_COLLISION_BOUNCE = {-0.9, -1.1, -0.9};
+    vector<Collision> prevCollisions;
 
     /**
      * computes the module of the lift acceleration produced by a wing
@@ -90,28 +91,48 @@ private:
         collision = highestPoint.y > position.y ? MESH : NONE;
     }
 
-    // possible improvement: after 10 consecutive MESH collisions change position to random one in a certain radius (> than building)
+    int countPrevMeshCollisions() {
+        int count = 0;
+        for (auto c : prevCollisions) {
+            if (c == MESH) count++;
+        }
+        return count;
+    }
+
+    /**
+     * behaviour of the plane when a collision is detected, depending on the type of collision
+     */
     void reactToCollision() {
         switch (collision) {
             case NONE: break;
+            /**
+             * collision with ground: nullify the vertical speed and position, and level the plane with the ground
+             */
             case GROUND: {
                 position.y = 0;
                 speed.y = 0;
 
                 rotation *= rotate(quat(1,0,0,0), rotation.x * 0.3f, vec3(- 1, 0, 0))
                             * rotate(quat(1,0,0,0), rotation.z * 0.3f, vec3(0, 0, - 1));
-                cout << "COLLISION WITH GROUND DETECTED\n";
+                //cout << "COLLISION WITH GROUND DETECTED\n";
                 break;
             }
+            /**
+             * collision with mesh (building): "bounce" the plane back and if too many consecutive mesh collisions (>3/10)
+             * among the last collisions, also teleport the plane back to the center (to avoid "sinking" into buildings)
+             */
             case MESH: {
                 speed = {speed.x * MESH_COLLISION_BOUNCE.x,
                          speed.y * MESH_COLLISION_BOUNCE.y,
                          speed.z * MESH_COLLISION_BOUNCE.z};
-                cout << "COLLISION WITH BUILDING DETECTED\n";
-                collision = NONE;
+                if(countPrevMeshCollisions() > 3) position = {0, 0, 0};
+                //cout << "COLLISION WITH BUILDING DETECTED\n";
+                cout << "prevMeshCollisions = " << countPrevMeshCollisions() << "\n";
                 break;
             }
         }
+        if (prevCollisions.size() >= 10) prevCollisions.pop_back();
+        prevCollisions.insert(prevCollisions.begin(), collision);
     }
 
     void updateUAxes() {
