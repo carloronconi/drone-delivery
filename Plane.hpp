@@ -13,6 +13,8 @@
 using namespace glm;
 using namespace std;
 
+enum Collision {NONE, GROUND, MESH};
+
 class Plane {
 private:
     // state of the plane in world coordinates
@@ -47,6 +49,7 @@ private:
     // list of vertices of models for which we want collision detection
     vector<vec3> verticesToAvoid;
     const float COLLISION_DISTANCE = 1.0f;
+    Collision collision = NONE;
 
     /**
      * computes the module of the lift acceleration produced by a wing
@@ -70,8 +73,11 @@ private:
      * The big simplification here is that if the model has very few vertices very far apart (e.g. a simple big cube) a collision would
      * not be detected if the plane collided in the middle of the cube's face, because no vertex would be found close to the plane.
      */
-    bool isCollisionDetected() {
-        if (position.y < 0) return true; // simplest case: don't go below the ground
+    void detectCollisions() {
+        if (position.y < 0) {
+            collision = GROUND;
+            return; // simplest case: don't go below the ground
+        }
         glm::vec3 highestPoint = {0.0, -1.0, 0.0};
         for (auto p : verticesToAvoid) {
             // this condition checks a vertical cylinder of points of radius COLLISION_DISTANCE and takes the point inside
@@ -80,8 +86,28 @@ private:
                 highestPoint = p;
             }
         }
-        if (highestPoint.y > position.y) cout << "COLLISION WITH HOUSE DETECTED\n";
-        return highestPoint.y > position.y;
+        collision = highestPoint.y > position.y ? MESH : NONE;
+    }
+
+    void reactToCollision() {
+        switch (collision) {
+            case NONE: return;
+            case GROUND: {
+                position.y = 0;
+                speed.y = 0;
+
+                rotation *= rotate(quat(1,0,0,0), rotation.x * 0.3f, vec3(- 1, 0, 0))
+                            * rotate(quat(1,0,0,0), rotation.z * 0.3f, vec3(0, 0, - 1));
+                cout << "COLLISION WITH GROUND DETECTED\n";
+                return;
+            }
+            case MESH: {
+                speed = -speed * 0.9f;
+                cout << "COLLISION WITH BUILDING DETECTED\n";
+                collision = NONE;
+                return;
+            }
+        }
     }
 
     void updateUAxes() {
@@ -163,13 +189,8 @@ public:
          * compute the terrain.y of the closest xz point of terrain mesh and then change comparison below to position.y < terrain.y
          */
 
-        if (isCollisionDetected()) {
-            position.y = 0;
-            speed.y = 0;
-
-            rotation *= rotate(quat(1,0,0,0), rotation.x * 0.3f, vec3(- 1, 0, 0))
-                        * rotate(quat(1,0,0,0), rotation.z * 0.3f, vec3(0, 0, - 1));
-        }
+        detectCollisions();
+        reactToCollision();
 
         lastWorldMatrix = translate(mat4(1), vec3(position.x, position.y + PLANE_CENTER_OF_LIFT * PLANE_SCALE, position.z)) *
                           rotate(mat4(rotation), glm::radians(270.0f), glm::vec3(0, 1, 0)) *
