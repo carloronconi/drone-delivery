@@ -125,7 +125,10 @@ private:
                 speed = {speed.x * MESH_COLLISION_BOUNCE.x,
                          speed.y * MESH_COLLISION_BOUNCE.y,
                          speed.z * MESH_COLLISION_BOUNCE.z};
-                if(countPrevMeshCollisions() > 3) position = {0, 0, 0};
+                if(countPrevMeshCollisions() > 3) {
+                    position = {0, 0, 0};
+                    speed = {0, 0, 0};
+                }
                 //cout << "COLLISION WITH BUILDING DETECTED\n";
                 cout << "prevMeshCollisions = " << countPrevMeshCollisions() << "\n";
                 break;
