@@ -455,7 +455,7 @@ class Game : public BaseProject {
             targetPos.x = static_cast<float>(rand() % RANGE + START);
             targetPos.z = static_cast<float>(rand() % RANGE + START);
         }
-        glm::mat4 arrowWorldMat = glm::translate(glm::mat4(1), glm::vec3(targetPos.x, 1, targetPos.z));
+        glm::mat4 arrowWorldMat = glm::translate(glm::mat4(1), glm::vec3(targetPos.x, 2.5, targetPos.z));
         uboArrow.amb = 1.0f; uboArrow.gamma = 180.0f; uboArrow.sColor = glm::vec3(1.0f);
         uboArrow.mvpMat = projMat * viewMat * arrowWorldMat;
         uboArrow.mMat = arrowWorldMat;
