@@ -50,6 +50,7 @@ private:
     vector<vec3> verticesToAvoid;
     const float COLLISION_DISTANCE = 1.0f;
     Collision collision = NONE;
+    const vec3 MESH_COLLISION_BOUNCE = {-0.9, -1.1, -0.9};
 
     /**
      * computes the module of the lift acceleration produced by a wing
@@ -91,7 +92,7 @@ private:
 
     void reactToCollision() {
         switch (collision) {
-            case NONE: return;
+            case NONE: break;
             case GROUND: {
                 position.y = 0;
                 speed.y = 0;
@@ -99,13 +100,15 @@ private:
                 rotation *= rotate(quat(1,0,0,0), rotation.x * 0.3f, vec3(- 1, 0, 0))
                             * rotate(quat(1,0,0,0), rotation.z * 0.3f, vec3(0, 0, - 1));
                 cout << "COLLISION WITH GROUND DETECTED\n";
-                return;
+                break;
             }
             case MESH: {
-                speed = -speed * 0.9f;
+                speed = {speed.x * MESH_COLLISION_BOUNCE.x,
+                         speed.y * MESH_COLLISION_BOUNCE.y,
+                         speed.z * MESH_COLLISION_BOUNCE.z};
                 cout << "COLLISION WITH BUILDING DETECTED\n";
                 collision = NONE;
-                return;
+                break;
             }
         }
     }
