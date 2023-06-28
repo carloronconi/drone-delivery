@@ -393,6 +393,7 @@ class Game : public BaseProject {
 			if(userInputs.handleFire) {
 				gameState = 0;	// jump back to splash screen
 			} */
+            if (score >= WINNING_SCORE) gameState = 0;
 			break;
 		}
 
@@ -455,7 +456,7 @@ class Game : public BaseProject {
         if (box->isTargetHit()) {
             targetPos.x = static_cast<float>(rand() % RANGE + START);
             targetPos.z = static_cast<float>(rand() % RANGE + START);
-            score++;
+            if (gameState == 1) score++;
         }
         glm::mat4 arrowWorldMat = glm::translate(glm::mat4(1), glm::vec3(targetPos.x, 2.5, targetPos.z));
         uboArrow.amb = 1.0f; uboArrow.gamma = 180.0f; uboArrow.sColor = glm::vec3(1.0f);
