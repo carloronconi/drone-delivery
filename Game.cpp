@@ -32,7 +32,7 @@ class Game : public BaseProject {
 	Model<VertexOverlay> MKey, MSplash;
 	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSKey, DSSplash, DSGround; /** one per instance of model **/
 	std::array<DescriptorSet, 4> DSPark;
-	Texture TCity, TArrow, TKey, TSplash;
+	Texture TCity, TArrow, TGround, TKey, TSplash;
 	
 	// C++ storage for uniform variables
 	MeshUniformBlock uboPlane, uboArrow, uboBox, uboGround;
@@ -179,7 +179,13 @@ class Game : public BaseProject {
         MArrow.init(this, &VMesh, "Models/arrow.obj", OBJ);
         MBox.init(this, &VMesh, "Models/box_005.mgcg", MGCG);
 
-        MGround.init(this, &VMesh, "Models/ground.mgcg", MGCG);
+        // MGround.init(this, &VMesh, "Models/ground.mgcg", MGCG);
+        MGround.vertices = {{{-50, 0, -50}, {0, 1, 0}, {0, 0}},
+                            {{-50, 0,  50}, {0, 1, 0}, {1, 0}},
+                            {{ 50, 0, -50}, {0, 1, 0}, {0, 1}},
+                            {{ 50, 0,  50}, {0, 1, 0}, {1, 1}}};
+        MGround.indices = {0, 1, 2, 1, 3, 2};
+        MGround.initMesh(this, &VMesh);
 
 		// Creates a mesh with direct enumeration of vertices and indices
 		MKey.vertices = {{{-0.8f, 0.6f}, {0.0f,0.0f}}, {{-0.8f, 0.95f}, {0.0f,1.0f}},
@@ -197,6 +203,7 @@ class Game : public BaseProject {
 		// The second parameter is the file name
 		TCity.init(this, "textures/Textures_City.png");
         TArrow.init(this, "textures/arrow.png");
+        TGround.init(this, "textures/grass.jpg");
 		TKey.init(this,    "textures/PressSpace.png");
 		TSplash.init(this, "textures/SplashScreen.png");
 
@@ -229,7 +236,7 @@ class Game : public BaseProject {
         });
         DSGround.init(this, &DSLMesh, {
                 {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-                {1, TEXTURE, 0, &TCity}
+                {1, TEXTURE, 0, &TGround}
         });
 		DSKey.init(this, &DSLOverlay, {
 					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
@@ -273,6 +280,7 @@ class Game : public BaseProject {
 		// Cleanup textures
 		TCity.cleanup();
         TArrow.cleanup();
+        TGround.cleanup();
 		TKey.cleanup();
 		TSplash.cleanup();
 		
@@ -457,7 +465,7 @@ class Game : public BaseProject {
         uboBox.nMat = glm::inverse(glm::transpose(boxWorldMat));
         DSBox.map(currentImage, &uboBox, sizeof(uboBox), 0);
 
-        static glm::mat4 groundWorldMat = glm::scale(glm::mat4(1), glm::vec3(100, 1, 100));
+        static glm::mat4 groundWorldMat = glm::mat4(1);
         uboGround.amb = 1.0f; uboGround.gamma = 180.0f; uboGround.sColor = glm::vec3(1.0f);
         uboGround.mvpMat = projMat * viewMat * groundWorldMat;
         uboGround.mMat = groundWorldMat;
