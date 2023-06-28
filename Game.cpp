@@ -31,6 +31,7 @@ class Game : public BaseProject {
 	std::array<Model<VertexMesh>, 4> MPark;
 	Model<VertexOverlay> MKey, MSplash;
 	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSKey, DSSplash, DSGround; /** one per instance of model **/
+	const int MKeyInstances = 3; /** or if instances are identical use INSTANCED RENDERING! sharing DS **/
 	std::array<DescriptorSet, 4> DSPark;
 	Texture TCity, TArrow, TGround, TKey, TSplash;
 	
@@ -351,7 +352,7 @@ class Game : public BaseProject {
 		MKey.bind(commandBuffer);
 		DSKey.bind(commandBuffer, POverlay, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MKey.indices.size()), 1, 0, 0, 0);
+				static_cast<uint32_t>(MKey.indices.size()), MKeyInstances, 0, 0, 0);
 
 		MSplash.bind(commandBuffer);
 		DSSplash.bind(commandBuffer, POverlay, 0, currentImage);
@@ -473,7 +474,8 @@ class Game : public BaseProject {
         DSGround.map(currentImage, &uboGround, sizeof(uboGround), 0);
 
 		uboKey.visible = (gameState == 1) ? 1.0f : 0.0f;
-        uboKey.mvpMat = glm::translate(glm::mat4(1), glm::vec3(-0.5, -0.5, 0));
+        uboKey.mvpMat = glm::translate(glm::mat4(1), glm::vec3(0, 0, 0));
+        uboKey.offset = {0.1, 0.1}; /** offset between identical instances **/
 		DSKey.map(currentImage, &uboKey, sizeof(uboKey), 0);
 
 		uboSplash.visible = (gameState == 0) ? 1.0f : 0.0f;

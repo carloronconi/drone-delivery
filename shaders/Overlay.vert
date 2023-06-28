@@ -4,6 +4,7 @@
 layout(binding = 0) uniform UniformBufferObject {
 	float visible;
 	mat4 mvpMat;
+	vec2 offset;
 // add vec2 translation (use: inPosition * translation * ubo.visible...)
 // or even a mat4 mvpMat for complete rotations (use: = mvpMat * vec4(inPosition...)
 // or even better a mat? for only transl and rot in 2 dimensions
@@ -18,6 +19,7 @@ layout(location = 1) in vec2 inUV;
 layout(location = 0) out vec2 outUV;
 
 void main() {
-	gl_Position = ubo.mvpMat * vec4(inPosition * ubo.visible, 0.5f, 1.0f);
+	vec2 offset = ubo.offset * gl_InstanceIndex;
+	gl_Position = ubo.mvpMat * vec4(inPosition * ubo.visible + offset, 0.5f, 1.0f);
 	outUV = inUV;
 }
