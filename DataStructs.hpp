@@ -25,9 +25,10 @@ struct MeshUniformBlock {
 };
 
 struct OverlayUniformBlock {
-    alignas(4) float visible;
+    alignas(4) float visible; // applies to all instances
     alignas(16) glm::mat4 mvpMat;
     alignas(8) glm::vec2 offset;
+    float instancesToDraw; // applies only if visible == 1
 };
 
 struct GlobalUniformBlock {

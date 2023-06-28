@@ -479,10 +479,12 @@ class Game : public BaseProject {
         uboScore.visible = (gameState == 1) ? 1.0f : 0.0f;
         uboScore.mvpMat = glm::translate(glm::mat4(1), glm::vec3(0, 0, 0));
         uboScore.offset = {SCORE_OFFSET, 0}; /** offset between identical instances **/
+        uboScore.instancesToDraw = 2.0;
 		DSScore.map(currentImage, &uboScore, sizeof(uboScore), 0);
 
 		uboSplash.visible = (gameState == 0) ? 1.0f : 0.0f;
         uboSplash.mvpMat = glm::translate(glm::mat4(1), glm::vec3(-0.5, 0, 0));
+        uboSplash.instancesToDraw = 1.0;
 		DSSplash.map(currentImage, &uboSplash, sizeof(uboSplash), 0);
 	}
 
