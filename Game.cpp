@@ -29,17 +29,17 @@ class Game : public BaseProject {
 	// Please note that Model objects depends on the corresponding vertex structure
 	Model<VertexMesh> MPlane, MArrow, MBox, MGround; /** one per model **/
 	std::array<Model<VertexMesh>, 4> MPark;
-	Model<VertexOverlay> MKey, MSplash;
-	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSKey, DSSplash, DSGround; /** one per instance of model **/
-	const int MKeyInstances = 3; /** or if instances are identical use INSTANCED RENDERING! sharing DS **/
+	Model<VertexOverlay> MScore, MSplash;
+	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSScore, DSSplash, DSGround; /** one per instance of model **/
+	const int MScoreInstances = 3; /** or if instances are identical use INSTANCED RENDERING! sharing DS **/
 	std::array<DescriptorSet, 4> DSPark;
-	Texture TCity, TArrow, TGround, TKey, TSplash;
+	Texture TCity, TArrow, TGround, TScore, TSplash;
 	
 	// C++ storage for uniform variables
 	MeshUniformBlock uboPlane, uboArrow, uboBox, uboGround;
     std::array<MeshUniformBlock, 4> uboPark;
 	GlobalUniformBlock gubo;
-	OverlayUniformBlock uboKey, uboSplash;
+	OverlayUniformBlock uboScore, uboSplash;
 
 	int gameState;
     glm::vec3 targetPos;
@@ -51,6 +51,9 @@ class Game : public BaseProject {
             glm::vec3(16, 0, -16),
             glm::vec3(-16, 0, 16),
             glm::vec3(-16, 0, -16)};
+    const float SCORE_OFFSET = 0.15;
+    const glm::vec2 SCORE_BOTTOM_LEFT = {-0.9f, 0.8f};
+    const float SCORE_WIDTH = 0.10;
 
 	// Here you set the main application parameters
 	void setWindowParameters() {
@@ -188,11 +191,11 @@ class Game : public BaseProject {
         MGround.indices = {0, 1, 2, 1, 3, 2};
         MGround.initMesh(this, &VMesh);
 
-		// Creates a mesh with direct enumeration of vertices and indices
-		MKey.vertices = {{{-0.8f, 0.6f}, {0.0f,0.0f}}, {{-0.8f, 0.95f}, {0.0f,1.0f}},
-						 {{ 0.8f, 0.6f}, {1.0f,0.0f}}, {{ 0.8f, 0.95f}, {1.0f,1.0f}}};
-		MKey.indices = {0, 1, 2,    1, 2, 3};
-		MKey.initMesh(this, &VOverlay);
+        float height = Ar * SCORE_WIDTH; // to make score images square
+		MScore.vertices = {{SCORE_BOTTOM_LEFT, {0.0f, 0.0f}}, {{SCORE_BOTTOM_LEFT.x, SCORE_BOTTOM_LEFT.y + height}, {0.0f, 1.0f}},
+                           {{SCORE_BOTTOM_LEFT.x + SCORE_WIDTH, SCORE_BOTTOM_LEFT.y}, {1.0f, 0.0f}}, {{SCORE_BOTTOM_LEFT.x + SCORE_WIDTH, SCORE_BOTTOM_LEFT.y + height}, {1.0f, 1.0f}}};
+        MScore.indices = {0, 1, 2, 1, 2, 3};
+		MScore.initMesh(this, &VOverlay);
 		
 		// Creates a mesh with direct enumeration of vertices and indices
 		MSplash.vertices = {{{-1.0f, -0.58559f}, {0.0102f, 0.0f}}, {{-1.0f, 0.58559f}, {0.0102f,0.85512f}},
@@ -205,7 +208,7 @@ class Game : public BaseProject {
 		TCity.init(this, "textures/Textures_City.png");
         TArrow.init(this, "textures/arrow.png");
         TGround.init(this, "textures/grass.jpg");
-		TKey.init(this,    "textures/PressSpace.png");
+		TScore.init(this, "textures/BoxScore.jpg");
 		TSplash.init(this, "textures/SplashScreen.png");
 
 		initGameLogic();
@@ -239,9 +242,9 @@ class Game : public BaseProject {
                 {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
                 {1, TEXTURE, 0, &TGround}
         });
-		DSKey.init(this, &DSLOverlay, {
+		DSScore.init(this, &DSLOverlay, {
 					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TKey}
+					{1, TEXTURE, 0, &TScore}
 				});
 		DSSplash.init(this, &DSLOverlay, {
 					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
@@ -268,7 +271,7 @@ class Game : public BaseProject {
         DSBox.cleanup();
         DSArrow.cleanup();
         DSGround.cleanup();
-		DSKey.cleanup();
+		DSScore.cleanup();
 		DSSplash.cleanup();
 		DSGubo.cleanup();
 	}
@@ -282,7 +285,7 @@ class Game : public BaseProject {
 		TCity.cleanup();
         TArrow.cleanup();
         TGround.cleanup();
-		TKey.cleanup();
+		TScore.cleanup();
 		TSplash.cleanup();
 		
 		// Cleanup models
@@ -294,7 +297,7 @@ class Game : public BaseProject {
         MBox.cleanup();
         MArrow.cleanup();
         MGround.cleanup();
-		MKey.cleanup();
+		MScore.cleanup();
 		MSplash.cleanup();
 		
 		// Cleanup descriptor set layouts
@@ -349,10 +352,10 @@ class Game : public BaseProject {
                          static_cast<uint32_t>(MGround.indices.size()), 1, 0, 0, 0);
 
 		POverlay.bind(commandBuffer);
-		MKey.bind(commandBuffer);
-		DSKey.bind(commandBuffer, POverlay, 0, currentImage);
+		MScore.bind(commandBuffer);
+		DSScore.bind(commandBuffer, POverlay, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
-				static_cast<uint32_t>(MKey.indices.size()), MKeyInstances, 0, 0, 0);
+                         static_cast<uint32_t>(MScore.indices.size()), MScoreInstances, 0, 0, 0);
 
 		MSplash.bind(commandBuffer);
 		DSSplash.bind(commandBuffer, POverlay, 0, currentImage);
@@ -473,10 +476,10 @@ class Game : public BaseProject {
         uboGround.nMat = glm::inverse(glm::transpose(groundWorldMat));
         DSGround.map(currentImage, &uboGround, sizeof(uboGround), 0);
 
-		uboKey.visible = (gameState == 1) ? 1.0f : 0.0f;
-        uboKey.mvpMat = glm::translate(glm::mat4(1), glm::vec3(0, 0, 0));
-        uboKey.offset = {0.1, 0.1}; /** offset between identical instances **/
-		DSKey.map(currentImage, &uboKey, sizeof(uboKey), 0);
+        uboScore.visible = (gameState == 1) ? 1.0f : 0.0f;
+        uboScore.mvpMat = glm::translate(glm::mat4(1), glm::vec3(0, 0, 0));
+        uboScore.offset = {SCORE_OFFSET, 0}; /** offset between identical instances **/
+		DSScore.map(currentImage, &uboScore, sizeof(uboScore), 0);
 
 		uboSplash.visible = (gameState == 0) ? 1.0f : 0.0f;
         uboSplash.mvpMat = glm::translate(glm::mat4(1), glm::vec3(-0.5, 0, 0));
