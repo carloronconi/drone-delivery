@@ -31,7 +31,6 @@ class Game : public BaseProject {
 	std::array<Model<VertexMesh>, 4> MPark;
 	Model<VertexOverlay> MScore, MSplash;
 	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSScore, DSSplash, DSGround; /** one per instance of model **/
-	const int MScoreInstances = 3; /** or if instances are identical use INSTANCED RENDERING! sharing DS **/
 	std::array<DescriptorSet, 4> DSPark;
 	Texture TCity, TArrow, TGround, TScore, TSplash;
 	
@@ -54,6 +53,8 @@ class Game : public BaseProject {
     const float SCORE_OFFSET = 0.15;
     const glm::vec2 SCORE_BOTTOM_LEFT = {-0.9f, 0.8f};
     const float SCORE_WIDTH = 0.10;
+    int score = 0;
+    const int WINNING_SCORE = 5; /** or if instances are identical use INSTANCED RENDERING! sharing DS **/
 
 	// Here you set the main application parameters
 	void setWindowParameters() {
@@ -355,7 +356,7 @@ class Game : public BaseProject {
 		MScore.bind(commandBuffer);
 		DSScore.bind(commandBuffer, POverlay, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(MScore.indices.size()), MScoreInstances, 0, 0, 0);
+                         static_cast<uint32_t>(MScore.indices.size()), WINNING_SCORE, 0, 0, 0);
 
 		MSplash.bind(commandBuffer);
 		DSSplash.bind(commandBuffer, POverlay, 0, currentImage);
@@ -454,6 +455,7 @@ class Game : public BaseProject {
         if (box->isTargetHit()) {
             targetPos.x = static_cast<float>(rand() % RANGE + START);
             targetPos.z = static_cast<float>(rand() % RANGE + START);
+            score++;
         }
         glm::mat4 arrowWorldMat = glm::translate(glm::mat4(1), glm::vec3(targetPos.x, 2.5, targetPos.z));
         uboArrow.amb = 1.0f; uboArrow.gamma = 180.0f; uboArrow.sColor = glm::vec3(1.0f);
@@ -479,7 +481,7 @@ class Game : public BaseProject {
         uboScore.visible = (gameState == 1) ? 1.0f : 0.0f;
         uboScore.mvpMat = glm::translate(glm::mat4(1), glm::vec3(0, 0, 0));
         uboScore.offset = {SCORE_OFFSET, 0}; /** offset between identical instances **/
-        uboScore.instancesToDraw = 2.0;
+        uboScore.instancesToDraw = static_cast<float>(WINNING_SCORE - score);
 		DSScore.map(currentImage, &uboScore, sizeof(uboScore), 0);
 
 		uboSplash.visible = (gameState == 0) ? 1.0f : 0.0f;
