@@ -90,6 +90,7 @@ private:
         collision = highestPoint.y > position.y ? MESH : NONE;
     }
 
+    // possible improvement: after 10 consecutive MESH collisions change position to random one in a certain radius (> than building)
     void reactToCollision() {
         switch (collision) {
             case NONE: break;
