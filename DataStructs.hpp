@@ -26,6 +26,7 @@ struct MeshUniformBlock {
 
 struct OverlayUniformBlock {
     alignas(4) float visible;
+    alignas(16) glm::mat4 mvpMat;
 };
 
 struct GlobalUniformBlock {

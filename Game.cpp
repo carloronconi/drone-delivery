@@ -465,9 +465,11 @@ class Game : public BaseProject {
         DSGround.map(currentImage, &uboGround, sizeof(uboGround), 0);
 
 		uboKey.visible = (gameState == 1) ? 1.0f : 0.0f;
+        uboKey.mvpMat = glm::translate(glm::mat4(1), glm::vec3(-0.5, -0.5, 0));
 		DSKey.map(currentImage, &uboKey, sizeof(uboKey), 0);
 
 		uboSplash.visible = (gameState == 0) ? 1.0f : 0.0f;
+        uboSplash.mvpMat = glm::translate(glm::mat4(1), glm::vec3(-0.5, 0, 0));
 		DSSplash.map(currentImage, &uboSplash, sizeof(uboSplash), 0);
 	}
 
