@@ -58,7 +58,7 @@ class Game : public BaseProject {
 		windowHeight = 600;
 		windowTitle = "Drone delivery";
     	windowResizable = GLFW_TRUE;
-		initialBackgroundColor = {0.0f, 0.005f, 0.01f, 1.0f};
+		initialBackgroundColor = {0.0f, 0.06f, 0.4f, 1.0f};
 		
 		// Descriptor pool sizes
 		uniformBlocksInPool = 11;
