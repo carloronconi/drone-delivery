@@ -29,16 +29,16 @@ class Game : public BaseProject {
 	// Please note that Model objects depends on the corresponding vertex structure
 	Model<VertexMesh> MPlane, MArrow, MBox, MGround; /** one per model **/
 	std::array<Model<VertexMesh>, 4> MPark;
-	Model<VertexOverlay> MScore, MSplash;
-	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSScore, DSSplash, DSGround; /** one per instance of model **/
+	Model<VertexOverlay> MScore, MLife, MSplash;
+	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSScore, DSLife, DSSplash, DSGround; /** one per instance of model **/
 	std::array<DescriptorSet, 4> DSPark;
-	Texture TCity, TArrow, TGround, TScore, TSplash;
+	Texture TCity, TArrow, TGround, TScore, TLife, TSplash;
 	
 	// C++ storage for uniform variables
 	MeshUniformBlock uboPlane, uboArrow, uboBox, uboGround;
     std::array<MeshUniformBlock, 4> uboPark;
 	GlobalUniformBlock gubo;
-	OverlayUniformBlock uboScore, uboSplash;
+	OverlayUniformBlock uboScore, uboLife, uboSplash;
 
 	GameState gameState = SPLASH;
     glm::vec3 targetPos;
@@ -53,6 +53,7 @@ class Game : public BaseProject {
     const float SCORE_OFFSET = 0.15;
     const glm::vec2 SCORE_BOTTOM_LEFT = {-0.9f, 0.8f};
     const float SCORE_WIDTH = 0.10;
+    const float LIFE_DISTANCE = -0.2;
     const int WINNING_SCORE = 5; /** or if instances are identical use INSTANCED RENDERING! sharing DS **/
     const int STARTING_LIVES = 3;
     int score = 0;
@@ -68,9 +69,9 @@ class Game : public BaseProject {
 		initialBackgroundColor = {0.0f, 0.06f, 0.4f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 11;
-		texturesInPool = 10;
-		setsInPool = 11;
+		uniformBlocksInPool = 12;
+		texturesInPool = 11;
+		setsInPool = 12;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 	}
@@ -194,11 +195,16 @@ class Game : public BaseProject {
         MGround.indices = {0, 1, 2, 1, 3, 2};
         MGround.initMesh(this, &VMesh);
 
-        float height = Ar * SCORE_WIDTH; // to make score images square
-		MScore.vertices = {{SCORE_BOTTOM_LEFT, {0.0f, 0.0f}}, {{SCORE_BOTTOM_LEFT.x, SCORE_BOTTOM_LEFT.y + height}, {0.0f, 1.0f}},
-                           {{SCORE_BOTTOM_LEFT.x + SCORE_WIDTH, SCORE_BOTTOM_LEFT.y}, {1.0f, 0.0f}}, {{SCORE_BOTTOM_LEFT.x + SCORE_WIDTH, SCORE_BOTTOM_LEFT.y + height}, {1.0f, 1.0f}}};
+        float scoreHeight = Ar * SCORE_WIDTH; // to make score images square
+		MScore.vertices = {{SCORE_BOTTOM_LEFT, {0.0f, 0.0f}}, {{SCORE_BOTTOM_LEFT.x, SCORE_BOTTOM_LEFT.y + scoreHeight}, {0.0f, 1.0f}},
+                           {{SCORE_BOTTOM_LEFT.x + SCORE_WIDTH, SCORE_BOTTOM_LEFT.y}, {1.0f, 0.0f}}, {{SCORE_BOTTOM_LEFT.x + SCORE_WIDTH, SCORE_BOTTOM_LEFT.y + scoreHeight}, {1.0f, 1.0f}}};
         MScore.indices = {0, 1, 2, 1, 2, 3};
 		MScore.initMesh(this, &VOverlay);
+
+        MLife.vertices = {{SCORE_BOTTOM_LEFT, {0.0f, 0.0f}}, {{SCORE_BOTTOM_LEFT.x, SCORE_BOTTOM_LEFT.y + scoreHeight}, {0.0f, 1.0f}},
+                           {{SCORE_BOTTOM_LEFT.x + SCORE_WIDTH, SCORE_BOTTOM_LEFT.y}, {1.0f, 0.0f}}, {{SCORE_BOTTOM_LEFT.x + SCORE_WIDTH, SCORE_BOTTOM_LEFT.y + scoreHeight}, {1.0f, 1.0f}}};
+        MLife.indices = {0, 1, 2, 1, 2, 3};
+        MLife.initMesh(this, &VOverlay);
 		
 		// Creates a mesh with direct enumeration of vertices and indices
 		MSplash.vertices = {{{-1.0f, -0.58559f}, {0.0102f, 0.0f}}, {{-1.0f, 0.58559f}, {0.0102f,0.85512f}},
@@ -212,6 +218,7 @@ class Game : public BaseProject {
         TArrow.init(this, "textures/arrow.png");
         TGround.init(this, "textures/grass.jpg");
 		TScore.init(this, "textures/BoxScore.jpg");
+        TLife.init(this, "textures/life.png");
 		TSplash.init(this, "textures/SplashScreen.png");
 
 		initGameLogic();
@@ -249,6 +256,10 @@ class Game : public BaseProject {
 					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TScore}
 				});
+        DSLife.init(this, &DSLOverlay, {
+                {0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
+                {1, TEXTURE, 0, &TLife}
+        });
 		DSSplash.init(this, &DSLOverlay, {
 					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TSplash}
@@ -275,6 +286,7 @@ class Game : public BaseProject {
         DSArrow.cleanup();
         DSGround.cleanup();
 		DSScore.cleanup();
+        DSLife.cleanup();
 		DSSplash.cleanup();
 		DSGubo.cleanup();
 	}
@@ -289,6 +301,7 @@ class Game : public BaseProject {
         TArrow.cleanup();
         TGround.cleanup();
 		TScore.cleanup();
+        TLife.cleanup();
 		TSplash.cleanup();
 		
 		// Cleanup models
@@ -301,6 +314,7 @@ class Game : public BaseProject {
         MArrow.cleanup();
         MGround.cleanup();
 		MScore.cleanup();
+        TLife.cleanup();
 		MSplash.cleanup();
 		
 		// Cleanup descriptor set layouts
@@ -359,7 +373,9 @@ class Game : public BaseProject {
 		DSScore.bind(commandBuffer, POverlay, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MScore.indices.size()), WINNING_SCORE, 0, 0, 0);
-
+        DSLife.bind(commandBuffer, POverlay, 0, currentImage);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MLife.indices.size()), STARTING_LIVES, 0, 0, 0);
 		MSplash.bind(commandBuffer);
 		DSSplash.bind(commandBuffer, POverlay, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
@@ -396,6 +412,10 @@ class Game : public BaseProject {
          * because you can't know if the condition to enforce is player.xyz >< terrain.xyz,
          * but you can find the vertex "terrain" with closest xz and enforce that player.y > terrain.y
          */
+
+        if(plane->isCollisionDetected()) {
+            lives--;
+        }
 
         glm::mat4 worldMat = plane->computeWorldMatrix();
         glm::vec3 camPos = computeCameraPosition(worldMat, camDist, camHeight, camPitch);
@@ -469,6 +489,12 @@ class Game : public BaseProject {
         uboScore.offset = {SCORE_OFFSET, 0}; /** offset between identical instances **/
         uboScore.instancesToDraw = static_cast<float>(WINNING_SCORE - score);
         DSScore.map(currentImage, &uboScore, sizeof(uboScore), 0);
+
+        uboLife.visible = (gameState == 1) ? 1.0f : 0.0f;
+        uboLife.mvpMat = glm::translate(glm::mat4(1), glm::vec3(0, LIFE_DISTANCE, 0));
+        uboLife.offset = {SCORE_OFFSET, 0}; /** offset between identical instances **/
+        uboLife.instancesToDraw = static_cast<float>(lives);
+        DSLife.map(currentImage, &uboLife, sizeof(uboLife), 0);
     }
 
 	// Here is where you update the uniforms.

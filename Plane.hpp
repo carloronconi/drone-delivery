@@ -243,6 +243,14 @@ public:
     vec3& getSpeedInWorldCoordinates() {
         return speed;
     }
+
+    /**
+     * tells if a life-decreasing detection is detected
+     * right now only building collisions are consiidered life-decreasing, but implementation can change to include ground
+     */
+    bool isCollisionDetected() {
+        return collision == MESH;
+    }
 };
 
 
