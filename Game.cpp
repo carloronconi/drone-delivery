@@ -479,11 +479,11 @@ class Game : public BaseProject {
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
 
-        auto userInputs = UserInputs(this);
+        auto userInputs = UserInputs(this, gameState);
 
 		switch(gameState) {
 		  case SPLASH: {
-              if(userInputs.handleFire) gameState = PLAYING;
+              if(userInputs.handleNext) gameState = PLAYING;
               break;
           }
 		  case PLAYING: {
@@ -499,7 +499,7 @@ class Game : public BaseProject {
           {
               score = 0;
               lives = STARTING_LIVES;
-              if(userInputs.handleFire) gameState = SPLASH;
+              if(userInputs.handleNext) gameState = SPLASH;
               break;
           }
 		}
