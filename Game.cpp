@@ -364,18 +364,14 @@ class Game : public BaseProject {
 				static_cast<uint32_t>(MSplash.indices.size()), 1, 0, 0, 0);
 	}
 
-    void updateSplashUniformBuffer(uint32_t currentImage) {
-
+    void updateSplashUniformBuffer(uint32_t currentImage, UserInputs& userInputs) {
+        uboSplash.visible = (gameState == SPLASH) ? 1.0f : 0.0f;
+        uboSplash.mvpMat = glm::translate(glm::mat4(1), glm::vec3(-0.5, 0, 0));
+        uboSplash.instancesToDraw = 1.0;
+        DSSplash.map(currentImage, &uboSplash, sizeof(uboSplash), 0);
     }
 
-	// Here is where you update the uniforms.
-	// Very likely this will be where you will be writing the logic of your application.
-	void updateUniformBuffer(uint32_t currentImage) {
-		// Standard procedure to quit when the ESC key is pressed
-		if(glfwGetKey(window, GLFW_KEY_ESCAPE)) {
-			glfwSetWindowShouldClose(window, GL_TRUE);
-		}
-
+    void updatePlayingUniformBuffer(uint32_t currentImage, UserInputs& userInputs) {
         /**
          * keep gubo.eyePos fixed
          * compute the position of the plane, i.e. the plane's world matrix + view and projection matrices based on plane position (world matrix)
@@ -383,23 +379,6 @@ class Game : public BaseProject {
          *
          * ==> only thing that needs computing is WVP matrix of the plane, all others act accordingly
          */
-
-        auto userInputs = UserInputs(this);
-
-		switch(gameState) {		// main state machine implementation
-		  case SPLASH: // initial state - show splash screen
-			if(userInputs.handleFire) {
-				gameState = PLAYING;	// jump to the wait key state
-			}
-			break;
-		  case PLAYING: // wait key state
-          /*
-			if(userInputs.handleFire) {
-				gameState = 0;	// jump back to splash screen
-			} */
-            if (score >= WINNING_SCORE) gameState = SPLASH;
-			break;
-		}
 
         const float camHeight = 0.25;
         const float camDist = 25.0;
@@ -423,16 +402,16 @@ class Game : public BaseProject {
         glm::mat4 projMat = glm::perspective(FOVy, Ar, nearPlane, farPlane);
         projMat[1][1] *= -1;
 
-		gubo.DlightDir = glm::normalize(glm::vec3(1, 2, 3));
-		gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-		gubo.AmbLightColor = glm::vec3(0.1f);
-		gubo.eyePos = glm::vec3(100.0, 100.0, 100.0);
-		// Writes value to the GPU
-		DSGubo.map(currentImage, &gubo, sizeof(gubo), 0);
-		// the .map() method of a DataSet object, requires the current image of the swap chain as first parameter
-		// the second parameter is the pointer to the C++ data structure to transfer to the GPU
-		// the third parameter is its size
-		// the fourth parameter is the location inside the descriptor set of this uniform block
+        gubo.DlightDir = glm::normalize(glm::vec3(1, 2, 3));
+        gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+        gubo.AmbLightColor = glm::vec3(0.1f);
+        gubo.eyePos = glm::vec3(100.0, 100.0, 100.0);
+        // Writes value to the GPU
+        DSGubo.map(currentImage, &gubo, sizeof(gubo), 0);
+        // the .map() method of a DataSet object, requires the current image of the swap chain as first parameter
+        // the second parameter is the pointer to the C++ data structure to transfer to the GPU
+        // the third parameter is its size
+        // the fourth parameter is the location inside the descriptor set of this uniform block
 
         /**
          * It's actually the world that moves around, while the camera stays fixed, so each object in the world
@@ -453,7 +432,7 @@ class Game : public BaseProject {
         uboPlane.mvpMat = projMat * viewMat * worldMat;
         uboPlane.mMat = worldMat;
         uboPlane.nMat = glm::inverse(glm::transpose(worldMat));
-		DSPlane.map(currentImage, &uboPlane, sizeof(uboPlane), 0);
+        DSPlane.map(currentImage, &uboPlane, sizeof(uboPlane), 0);
 
         static auto* const box = new Package(userInputs, plane->getPositionInWorldCoordinates(), plane->getSpeedInWorldCoordinates(), targetPos);
 
@@ -487,12 +466,32 @@ class Game : public BaseProject {
         uboScore.mvpMat = glm::translate(glm::mat4(1), glm::vec3(0, 0, 0));
         uboScore.offset = {SCORE_OFFSET, 0}; /** offset between identical instances **/
         uboScore.instancesToDraw = static_cast<float>(WINNING_SCORE - score);
-		DSScore.map(currentImage, &uboScore, sizeof(uboScore), 0);
+        DSScore.map(currentImage, &uboScore, sizeof(uboScore), 0);
+    }
 
-		uboSplash.visible = (gameState == 0) ? 1.0f : 0.0f;
-        uboSplash.mvpMat = glm::translate(glm::mat4(1), glm::vec3(-0.5, 0, 0));
-        uboSplash.instancesToDraw = 1.0;
-		DSSplash.map(currentImage, &uboSplash, sizeof(uboSplash), 0);
+	// Here is where you update the uniforms.
+	// Very likely this will be where you will be writing the logic of your application.
+	void updateUniformBuffer(uint32_t currentImage) {
+		// Standard procedure to quit when the ESC key is pressed
+		if(glfwGetKey(window, GLFW_KEY_ESCAPE)) {
+			glfwSetWindowShouldClose(window, GL_TRUE);
+		}
+
+        auto userInputs = UserInputs(this);
+
+		switch(gameState) {
+		  case SPLASH: {
+              if(userInputs.handleFire) gameState = PLAYING;
+              break;
+          }
+		  case PLAYING: {
+              if (score >= WINNING_SCORE) gameState = SPLASH;
+              break;
+          }
+		}
+
+        updateSplashUniformBuffer(currentImage, userInputs);
+        updatePlayingUniformBuffer(currentImage, userInputs);
 	}
 
     /**
