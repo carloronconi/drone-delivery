@@ -50,4 +50,6 @@ struct VertexOverlay {
     glm::vec2 UV;
 };
 
+enum GameState {SPLASH, PLAYING, WON, LOST};
+
 #endif //DRONE_DELIVERY_DATASTRUCTS_HPP

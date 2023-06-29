@@ -40,7 +40,7 @@ class Game : public BaseProject {
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboScore, uboSplash;
 
-	int gameState;
+	GameState gameState = SPLASH;
     glm::vec3 targetPos;
     const int RANGE = 32;
     const int START = -16;
@@ -79,7 +79,7 @@ class Game : public BaseProject {
 	}
 
     void initGameLogic() {
-        gameState = 0;
+        gameState = SPLASH;
         targetPos.x = static_cast<float>(rand() % RANGE + START);
         targetPos.y = 0;
         targetPos.z = static_cast<float>(rand() % RANGE + START);
@@ -364,6 +364,10 @@ class Game : public BaseProject {
 				static_cast<uint32_t>(MSplash.indices.size()), 1, 0, 0, 0);
 	}
 
+    void updateSplashUniformBuffer(uint32_t currentImage) {
+
+    }
+
 	// Here is where you update the uniforms.
 	// Very likely this will be where you will be writing the logic of your application.
 	void updateUniformBuffer(uint32_t currentImage) {
@@ -383,17 +387,17 @@ class Game : public BaseProject {
         auto userInputs = UserInputs(this);
 
 		switch(gameState) {		// main state machine implementation
-		  case 0: // initial state - show splash screen
+		  case SPLASH: // initial state - show splash screen
 			if(userInputs.handleFire) {
-				gameState = 1;	// jump to the wait key state
+				gameState = PLAYING;	// jump to the wait key state
 			}
 			break;
-		  case 1: // wait key state
+		  case PLAYING: // wait key state
           /*
 			if(userInputs.handleFire) {
 				gameState = 0;	// jump back to splash screen
 			} */
-            if (score >= WINNING_SCORE) gameState = 0;
+            if (score >= WINNING_SCORE) gameState = SPLASH;
 			break;
 		}
 
