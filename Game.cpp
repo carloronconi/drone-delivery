@@ -53,8 +53,10 @@ class Game : public BaseProject {
     const float SCORE_OFFSET = 0.15;
     const glm::vec2 SCORE_BOTTOM_LEFT = {-0.9f, 0.8f};
     const float SCORE_WIDTH = 0.10;
-    int score = 0;
     const int WINNING_SCORE = 5; /** or if instances are identical use INSTANCED RENDERING! sharing DS **/
+    const int STARTING_LIVES = 3;
+    int score = 0;
+    int lives = STARTING_LIVES;
 
 	// Here you set the main application parameters
 	void setWindowParameters() {
@@ -485,7 +487,19 @@ class Game : public BaseProject {
               break;
           }
 		  case PLAYING: {
-              if (score >= WINNING_SCORE) gameState = SPLASH;
+              if (lives <= 0) {
+                  gameState = LOST;
+                  break;
+              }
+              if (score >= WINNING_SCORE) gameState = WON;
+              break;
+          }
+          case WON:
+          case LOST:
+          {
+              score = 0;
+              lives = STARTING_LIVES;
+              if(userInputs.handleFire) gameState = SPLASH;
               break;
           }
 		}
