@@ -29,16 +29,16 @@ class Game : public BaseProject {
 	// Please note that Model objects depends on the corresponding vertex structure
 	Model<VertexMesh> MPlane, MArrow, MBox, MGround; /** one per model **/
 	std::array<Model<VertexMesh>, 4> MPark;
-	Model<VertexOverlay> MScore, MLife, MSplash;
-	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSScore, DSLife, DSSplash, DSGround; /** one per instance of model **/
+	Model<VertexOverlay> MScore, MLife, MSplash, MWin, MLose;
+	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSScore, DSLife, DSSplash, DSWin, DSLose, DSGround; /** one per instance of model **/
 	std::array<DescriptorSet, 4> DSPark;
-	Texture TCity, TArrow, TGround, TScore, TLife, TSplash;
+	Texture TCity, TArrow, TGround, TScore, TLife, TSplash, TWin, TLose;
 	
 	// C++ storage for uniform variables
 	MeshUniformBlock uboPlane, uboArrow, uboBox, uboGround;
     std::array<MeshUniformBlock, 4> uboPark;
 	GlobalUniformBlock gubo;
-	OverlayUniformBlock uboScore, uboLife, uboSplash;
+	OverlayUniformBlock uboScore, uboLife, uboSplash, uboWin, uboLose;
 
 	GameState gameState = SPLASH;
     glm::vec3 targetPos;
@@ -69,9 +69,9 @@ class Game : public BaseProject {
 		initialBackgroundColor = {0.0f, 0.06f, 0.4f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 12;
-		texturesInPool = 11;
-		setsInPool = 12;
+		uniformBlocksInPool = 14;
+		texturesInPool = 13;
+		setsInPool = 14;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 	}
@@ -207,10 +207,18 @@ class Game : public BaseProject {
         MLife.initMesh(this, &VOverlay);
 		
 		// Creates a mesh with direct enumeration of vertices and indices
-		MSplash.vertices = {{{-1.0f, -0.58559f}, {0.0102f, 0.0f}}, {{-1.0f, 0.58559f}, {0.0102f,0.85512f}},
-						 {{ 1.0f,-0.58559f}, {1.0f,0.0f}}, {{ 1.0f, 0.58559f}, {1.0f,0.85512f}}};
+		MSplash.vertices = {{{-1, -1}, {0, 0}}, {{-1, 1}, {0, 1}},
+						 {{ 1,-1}, {1, 0}}, {{ 1, 1}, {1, 1}}};
 		MSplash.indices = {0, 1, 2,    1, 2, 3};
 		MSplash.initMesh(this, &VOverlay);
+
+        MWin.vertices = MSplash.vertices;
+        MWin.indices = MSplash.indices;
+        MWin.initMesh(this, &VOverlay);
+
+        MLose.vertices = MSplash.vertices;
+        MLose.indices = MSplash.indices;
+        MLose.initMesh(this, &VOverlay);
 		
 		// Create the textures
 		// The second parameter is the file name
@@ -219,7 +227,9 @@ class Game : public BaseProject {
         TGround.init(this, "textures/grass.jpg");
 		TScore.init(this, "textures/BoxScore.jpg");
         TLife.init(this, "textures/life.png");
-		TSplash.init(this, "textures/SplashScreen.png");
+		TSplash.init(this, "textures/splash-enlarged.jpg");
+        TWin.init(this, "textures/win-enlarged.jpg");
+        TLose.init(this, "textures/lose-enlarged.jpg");
 
 		initGameLogic();
 	}
@@ -264,6 +274,14 @@ class Game : public BaseProject {
 					{0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
 					{1, TEXTURE, 0, &TSplash}
 				});
+        DSWin.init(this, &DSLOverlay, {
+                {0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
+                {1, TEXTURE, 0, &TWin}
+        });
+        DSLose.init(this, &DSLOverlay, {
+                {0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
+                {1, TEXTURE, 0, &TLose}
+        });
 		DSGubo.init(this, &DSLGubo, {
 					{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
 				});
@@ -288,6 +306,8 @@ class Game : public BaseProject {
 		DSScore.cleanup();
         DSLife.cleanup();
 		DSSplash.cleanup();
+        DSWin.cleanup();
+        DSLose.cleanup();
 		DSGubo.cleanup();
 	}
 
@@ -303,6 +323,8 @@ class Game : public BaseProject {
 		TScore.cleanup();
         TLife.cleanup();
 		TSplash.cleanup();
+        TWin.cleanup();
+        TLose.cleanup();
 		
 		// Cleanup models
         for (auto &mPark : MPark) {
@@ -316,6 +338,8 @@ class Game : public BaseProject {
 		MScore.cleanup();
         TLife.cleanup();
 		MSplash.cleanup();
+        MWin.cleanup();
+        MLose.cleanup();
 		
 		// Cleanup descriptor set layouts
 		DSLMesh.cleanup();
@@ -380,11 +404,19 @@ class Game : public BaseProject {
 		DSSplash.bind(commandBuffer, POverlay, 0, currentImage);
 		vkCmdDrawIndexed(commandBuffer,
 				static_cast<uint32_t>(MSplash.indices.size()), 1, 0, 0, 0);
+        MWin.bind(commandBuffer);
+        DSWin.bind(commandBuffer, POverlay, 0, currentImage);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MWin.indices.size()), 1, 0, 0, 0);
+        MLose.bind(commandBuffer);
+        DSLose.bind(commandBuffer, POverlay, 0, currentImage);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MLose.indices.size()), 1, 0, 0, 0);
 	}
 
     void updateSplashUniformBuffer(uint32_t currentImage, UserInputs& userInputs) {
         uboSplash.visible = (gameState == SPLASH) ? 1.0f : 0.0f;
-        uboSplash.mvpMat = glm::translate(glm::mat4(1), glm::vec3(-0.5, 0, 0));
+        uboSplash.mvpMat = glm::mat4(1);
         uboSplash.instancesToDraw = 1.0;
         DSSplash.map(currentImage, &uboSplash, sizeof(uboSplash), 0);
     }
@@ -497,6 +529,20 @@ class Game : public BaseProject {
         DSLife.map(currentImage, &uboLife, sizeof(uboLife), 0);
     }
 
+    void updateWinUniformBuffer(uint32_t currentImage, UserInputs& userInputs) {
+        uboWin.visible = (gameState == WON) ? 1.0f : 0.0f;
+        uboWin.mvpMat = glm::mat4(1);
+        uboWin.instancesToDraw = 1.0;
+        DSWin.map(currentImage, &uboWin, sizeof(uboWin), 0);
+    }
+
+    void updateLoseUniformBuffer(uint32_t currentImage, UserInputs& userInputs) {
+        uboLose.visible = (gameState == LOST) ? 1.0f : 0.0f;
+        uboLose.mvpMat = glm::mat4(1);
+        uboLose.instancesToDraw = 1.0;
+        DSLose.map(currentImage, &uboLose, sizeof(uboLose), 0);
+    }
+
 	// Here is where you update the uniforms.
 	// Very likely this will be where you will be writing the logic of your application.
 	void updateUniformBuffer(uint32_t currentImage) {
@@ -532,6 +578,8 @@ class Game : public BaseProject {
 
         updateSplashUniformBuffer(currentImage, userInputs);
         updatePlayingUniformBuffer(currentImage, userInputs);
+        updateWinUniformBuffer(currentImage, userInputs);
+        updateLoseUniformBuffer(currentImage, userInputs);
 	}
 
     /**
