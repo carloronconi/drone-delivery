@@ -227,9 +227,9 @@ class Game : public BaseProject {
         TGround.init(this, "textures/grass.jpg");
 		TScore.init(this, "textures/BoxScore.jpg");
         TLife.init(this, "textures/life.png");
-		TSplash.init(this, "textures/splash-enlarged.jpg");
-        TWin.init(this, "textures/win-enlarged.jpg");
-        TLose.init(this, "textures/lose-enlarged.jpg");
+		TSplash.init(this, "textures/splash.png");
+        TWin.init(this, "textures/win.png");
+        TLose.init(this, "textures/lose.png");
 
 		initGameLogic();
 	}
