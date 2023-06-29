@@ -430,9 +430,6 @@ class Game : public BaseProject {
          * ==> only thing that needs computing is WVP matrix of the plane, all others act accordingly
          */
 
-        const float camHeight = 0.25;
-        const float camDist = 25.0;
-        const float camPitch = 0.1f;
         const float FOVy = glm::radians(45.0f);
         const float nearPlane = 0.1f;
         const float farPlane = 100.f;
@@ -450,7 +447,7 @@ class Game : public BaseProject {
         }
 
         glm::mat4 worldMat = plane->computeWorldMatrix();
-        glm::vec3 camPos = computeCameraPosition(worldMat, camDist, camHeight, camPitch);
+        glm::vec3 camPos = computeCameraPosition(worldMat, userInputs);
         glm::vec3 planePos = plane->getPositionInWorldCoordinates();
         glm::mat4 viewMat = glm::lookAt(camPos, planePos, glm::vec3(0.0f, 1.0f, 0.0f)) ;
         glm::mat4 projMat = glm::perspective(FOVy, Ar, nearPlane, farPlane);
@@ -587,21 +584,31 @@ class Game : public BaseProject {
     * @param camDistance distance from tracked object in object's coordinates
     * @param camHeight height from tracked object in object's coordinates
     * @param camPitch pitch in radians
-    * @return camera position in world coordinates
+    * @return camera position in world coordinates implementing damping
     */
-    static vec3 computeCameraPosition(const mat4& world, float camDistance, float camHeight, float camPitch) {
-        const float MIN_CAM_HEIGHT_WORLD_COORDINATES = 0.5;
+    static vec3 computeCameraPosition(const mat4& world, UserInputs& userInputs) {
+        const float camHeight = 0.25;
+        const float camDistance = 25.0;
+        const float camPitch = 0.1f;
+        const float DAMP = 10.0;
 
-        vec3 position =
+        static vec3 posOld = {0, 0, 0};
+
+        vec3 posNew =
                 world
                 * glm::rotate(glm::mat4(1.0f), glm::radians(- 90.0f), glm::vec3(0,1,0))
                 * glm::vec4(- camDistance * std::cos(camPitch),
                           camHeight + camDistance * std::sin(camPitch),
                           0.0f,
                           1);
+        posNew.y = std::max(posNew.y, 0.5f); // avoids camera from going below the ground level
 
-        position.y = std::max(position.y, 0.5f); // avoids camera from going below the ground level
-        return position;
+        float prod = - DAMP * userInputs.deltaT;
+        vec3 pos = posOld * exp(prod) + posNew * (1 - exp(prod));
+
+        posOld = pos;
+
+        return pos;
     }
 };
 
