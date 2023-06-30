@@ -191,6 +191,20 @@ private:
         return to_string((int)vector.x) + " " + to_string((int)vector.y) + " " + to_string((int)vector.z);
     }
 
+    template<class T>
+    T damp(T next, T start = T(0)) {
+        const float DAMP = 20;
+
+        static T prev = start;
+
+        float prod = - DAMP * inputs->deltaT;
+        T curr = prev * exp(prod) + next * (1 - exp(prod));
+
+        prev = curr;
+
+        return curr;
+    }
+
 public:
     Plane(const vector<vec3>& collisionDetectionVertices = {}, const vec3 &initialPosition = vec3(0), const quat &initialRotation = quat(1, 0, 0, 0)) :
             position(initialPosition),
@@ -215,6 +229,8 @@ public:
                 rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.roll * inputs->deltaT, vec3(1, 0, 0))
                 * rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.yaw * inputs->deltaT, vec3(0, 1, 0))
                 * rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.pitch * inputs->deltaT, vec3(0, 0, 1));
+
+        rotation = damp(rotation, {1, 0, 0, 0});
 
         speed += inputs->deltaT * externalAccelerations; // external accelerations (doesn't require multiplying by uAxes: already in world coordinates)
         speed += inputs->deltaT * uAxes * (
