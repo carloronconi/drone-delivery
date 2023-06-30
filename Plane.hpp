@@ -34,6 +34,20 @@ struct ControlsMapping {
 
 class Plane {
 private:
+    // constants
+    // rotation and motion speed
+    const float CONTROL_SURFACES_ROT_ACCELERATION = glm::radians(30.0f);
+    const float ENGINE_ACCELERATION = 10.0f;
+    const float MAX_SPEED = 10.0f;
+    // plane physics parameters
+    const float PLANE_CENTER_OF_LIFT = 1.5f;
+    const float PLANE_SCALE = 0.1f;
+    const float MAX_WING_LIFT = 5.5f;
+    const float WING_LIFT_ANGLE = glm::radians(30.0f);
+    const float WING_INEFFICIENCY = 1.1f;
+    const bool PRINT_DEBUG = false;
+    const float ROT_DAMPING = 30.0;
+
     // state of the plane in world coordinates
     vec3 position;
     quat rotation;
@@ -50,19 +64,7 @@ private:
     // reference to command inputs used to update the world matrix
     UserInputs* inputs;
     ControlsMapping controls;
-
-    // constants
-    // rotation and motion speed
-    const float CONTROL_SURFACES_ROT_ACCELERATION = glm::radians(30.0f);
-    const float ENGINE_ACCELERATION = 10.0f;
-    const float MAX_SPEED = 10.0f;
-    // plane physics parameters
-    const float PLANE_CENTER_OF_LIFT = 1.5f;
-    const float PLANE_SCALE = 0.1f;
-    const float MAX_WING_LIFT = 5.5f;
-    const float WING_LIFT_ANGLE = glm::radians(30.0f);
-    const float WING_INEFFICIENCY = 1.1f;
-    const bool PRINT_DEBUG = false;
+    Damper<quat> rotationDamper = Damper<quat>(ROT_DAMPING, {1, 0, 0, 0});
 
     // list of vertices of models for which we want collision detection
     const vector<vec3>& verticesToAvoid;
@@ -130,8 +132,12 @@ private:
                 position.y = 0;
                 speed.y = 0;
 
-                rotation *= rotate(quat(1,0,0,0), rotation.x * 0.3f, vec3(- 1, 0, 0))
-                            * rotate(quat(1,0,0,0), rotation.z * 0.3f, vec3(0, 0, - 1));
+                rotationDamper.reset();
+                rotation = rotationDamper.damp(
+                        rotation
+                        * rotate(quat(1,0,0,0), rotation.x * 0.3f, vec3(- 1, 0, 0))
+                        * rotate(quat(1,0,0,0), rotation.z * 0.3f, vec3(0, 0, - 1)),
+                        inputs->deltaT);
                 //cout << "COLLISION WITH GROUND DETECTED\n";
                 break;
             }
@@ -212,7 +218,6 @@ public:
         updateUAxes();
 
         float wingLift = wingLiftFunction((inverse(uAxes) * speed).z);
-        static auto rotationDamper = Damper<quat>(75, {1, 0, 0, 0});
 
         rotation = rotationDamper.damp(
                 rotation

@@ -12,11 +12,13 @@ class Damper {
 private:
     const float DAMP;
     T prev;
+    T start;
 
 public:
     Damper(float damp = 50, T start = T()):
     DAMP(damp),
-    prev(start) {}
+    prev(start),
+    start(start){}
 
     T damp(T next, float deltaT) {
 
@@ -25,6 +27,10 @@ public:
         prev = curr;
 
         return curr;
+    }
+
+    void reset() {
+        prev = start;
     }
 };
 
