@@ -30,7 +30,7 @@ private:
     vec3 planeCoordinatesFriction{5, 1, 1};
 
     // reference to command inputs used to update the world matrix
-    UserInputs& inputs;
+    UserInputs* inputs;
 
     // constants
     // rotation and motion speed
@@ -56,12 +56,15 @@ private:
     }
 
 public:
-    Package(UserInputs &inputs, const vec3 &planePosition, const vec3 &planeSpeed, const vec3&  targetPosition) :
+    Package(const vec3 &planePosition, const vec3 &planeSpeed, const vec3&  targetPosition) :
             planePosition(planePosition),
             planeSpeed(planeSpeed),
             targetPosition(targetPosition),
-            inputs(inputs),
             state(held) {}
+
+    void updateInputs(UserInputs* userInputs) {
+        inputs = userInputs;
+    }
 
     /**
      * computes the world matrix for a new frame using the command inputs and stores it internally for other functions
@@ -72,7 +75,7 @@ public:
         switch (state) {
             case held:
                 hitTarget = false;
-                if (inputs.handleFire) {
+                if (inputs->handleFire) {
                     position = planePosition;
                     speed = planeSpeed;
                     state = falling;
@@ -84,17 +87,17 @@ public:
             case falling: {
                 updateUAxes();
 
-                speed += inputs.deltaT * externalAccelerations; // external accelerations (doesn't require multiplying by uAxes: already in world coordinates)
+                speed += inputs->deltaT * externalAccelerations; // external accelerations (doesn't require multiplying by uAxes: already in world coordinates)
 
                 // friction deceleration and speed limiting are computed in plane space
                 vec3 planeSpeed = inverse(uAxes) * speed; // convert speed from world to plane space
                 // plane speed is reduced by acceleration coordinates times deltaT in the opposite direction of plane speed
-                planeSpeed -= planeCoordinatesFriction * inputs.deltaT * normalize(planeSpeed);
+                planeSpeed -= planeCoordinatesFriction * inputs->deltaT * normalize(planeSpeed);
                 // plane speed magnitude (misleadingly named glm::length) is capped at max speed by multiplying the scalar for the direction of plane speed
                 if (glm::length(planeSpeed) > MAX_SPEED) planeSpeed = MAX_SPEED * normalize(planeSpeed);
                 speed = uAxes * planeSpeed; // update world speed converting back from plane speed
 
-                position += speed * inputs.deltaT;
+                position += speed * inputs->deltaT;
 
                 if (position.y < 0) { // simple collision detection
                     position.y = 0;

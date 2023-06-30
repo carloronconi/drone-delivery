@@ -50,6 +50,9 @@ class Game : public BaseProject {
             glm::vec3(16, 0, -16),
             glm::vec3(-16, 0, 16),
             glm::vec3(-16, 0, -16)};
+
+    Plane* const plane = new Plane(collisionDetectionVertices);
+    Package* const box = new Package(plane->getPositionInWorldCoordinates(), plane->getSpeedInWorldCoordinates(), targetPos);
     const float SCORE_OFFSET = 0.15;
     const glm::vec2 SCORE_BOTTOM_LEFT = {-0.9f, 0.8f};
     const float SCORE_WIDTH = 0.10;
@@ -434,8 +437,6 @@ class Game : public BaseProject {
         const float nearPlane = 0.1f;
         const float farPlane = 100.f;
 
-        static auto* const plane = new Plane(userInputs, collisionDetectionVertices);
-
         /**
          * MPark[0].vertices access map vertices for collision detection: finding top 3 closest vertices to player not enough
          * because you can't know if the condition to enforce is player.xyz >< terrain.xyz,
@@ -484,8 +485,6 @@ class Game : public BaseProject {
         uboPlane.mMat = worldMat;
         uboPlane.nMat = glm::inverse(glm::transpose(worldMat));
         DSPlane.map(currentImage, &uboPlane, sizeof(uboPlane), 0);
-
-        static auto* const box = new Package(userInputs, plane->getPositionInWorldCoordinates(), plane->getSpeedInWorldCoordinates(), targetPos);
 
         if (box->isTargetHit()) {
             targetPos.x = static_cast<float>(rand() % RANGE + START);
@@ -548,11 +547,13 @@ class Game : public BaseProject {
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
 
-        auto userInputs = UserInputs(this, gameState);
+        auto* userInputs = new UserInputs(this, gameState);
+        plane->updateInputs(userInputs);
+        box->updateInputs(userInputs);
 
 		switch(gameState) {
 		  case SPLASH: {
-              if(userInputs.handleNext) gameState = PLAYING;
+              if(userInputs->handleNext) gameState = PLAYING;
               break;
           }
 		  case PLAYING: {
@@ -569,15 +570,16 @@ class Game : public BaseProject {
               score = 0;
               lives = STARTING_LIVES;
               // plane.resetState();
-              if(userInputs.handleNext) gameState = SPLASH;
+              if(userInputs->handleNext) gameState = SPLASH;
               break;
           }
 		}
+        cout << "User inputs: " << userInputs->m.z << "\n";
 
-        updateSplashUniformBuffer(currentImage, userInputs);
-        updatePlayingUniformBuffer(currentImage, userInputs);
-        updateWinUniformBuffer(currentImage, userInputs);
-        updateLoseUniformBuffer(currentImage, userInputs);
+        updateSplashUniformBuffer(currentImage, *userInputs);
+        updatePlayingUniformBuffer(currentImage, *userInputs);
+        updateWinUniformBuffer(currentImage, *userInputs);
+        updateLoseUniformBuffer(currentImage, *userInputs);
 	}
 
     /**
