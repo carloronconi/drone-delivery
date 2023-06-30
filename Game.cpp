@@ -569,7 +569,7 @@ class Game : public BaseProject {
           {
               score = 0;
               lives = STARTING_LIVES;
-              // plane.resetState();
+              plane->resetState();
               if(userInputs->handleNext) gameState = SPLASH;
               break;
           }

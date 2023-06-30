@@ -253,6 +253,12 @@ public:
         return lastWorldMatrix * rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0,1,0));
     }
 
+    void resetState() {
+        speed = {0, 0, 0};
+        position = {0, 0, 0};
+        rotation = {1, 0, 0, 0};
+    }
+
     /**
      * @return plane position in world coordinates
      */
