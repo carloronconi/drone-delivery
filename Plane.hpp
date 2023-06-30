@@ -30,6 +30,25 @@ struct ControlsMapping {
     }
 };
 
+template<class T>
+class Damper {
+private:
+    T prev;
+    T damp(T next, float deltaT, T start = T(0)) {
+        const float DAMP = 10.0;
+
+        static T prev = start;
+
+        float prod = DAMP * deltaT;
+        T curr = prev * exp(prod) + next * (1 - exp(prod));
+
+        prev = curr;
+
+        return curr;
+    }
+};
+
+
 class Plane {
 private:
     // state of the plane in world coordinates
@@ -192,12 +211,11 @@ private:
     }
 
     template<class T>
-    T damp(T next, T start = T(0)) {
-        const float DAMP = 20;
+    T damp(T next, T start = T(0), float damp = 50) {
 
         static T prev = start;
 
-        float prod = - DAMP * inputs->deltaT;
+        float prod = - damp * inputs->deltaT;
         T curr = prev * exp(prod) + next * (1 - exp(prod));
 
         prev = curr;
@@ -225,12 +243,12 @@ public:
 
         float wingLift = wingLiftFunction((inverse(uAxes) * speed).z);
 
-        rotation *=
-                rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.roll * inputs->deltaT, vec3(1, 0, 0))
+        rotation = damp(
+                rotation
+                * rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.roll * inputs->deltaT, vec3(1, 0, 0))
                 * rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.yaw * inputs->deltaT, vec3(0, 1, 0))
-                * rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.pitch * inputs->deltaT, vec3(0, 0, 1));
-
-        rotation = damp(rotation, {1, 0, 0, 0});
+                * rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.pitch * inputs->deltaT, vec3(0, 0, 1)),
+                {1, 0, 0, 0});
 
         speed += inputs->deltaT * externalAccelerations; // external accelerations (doesn't require multiplying by uAxes: already in world coordinates)
         speed += inputs->deltaT * uAxes * (
