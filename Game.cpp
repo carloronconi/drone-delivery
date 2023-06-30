@@ -591,7 +591,7 @@ class Game : public BaseProject {
     static vec3 computeCameraPosition(const mat4& world, UserInputs& userInputs) {
         const float camHeight = 0.25;
         const float camDistance = 25.0;
-        const float camPitch = 0.1f;
+        const float camPitch = 0.5;
         const float DAMP = 10.0;
 
         static vec3 posOld = {0, 0, 0};
