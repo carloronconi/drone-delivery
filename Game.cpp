@@ -574,7 +574,6 @@ class Game : public BaseProject {
               break;
           }
 		}
-        cout << "User inputs: " << userInputs->m.z << "\n";
 
         updateSplashUniformBuffer(currentImage, *userInputs);
         updatePlayingUniformBuffer(currentImage, *userInputs);
