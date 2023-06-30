@@ -9,6 +9,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include "UserInputs.hpp"
 #include <ctime>
+#include "Damper.hpp"
 
 using namespace glm;
 using namespace std;
@@ -27,24 +28,6 @@ struct ControlsMapping {
         roll = - inputs.r.x; // up and down arrows
         speed = inputs.m.z; // WS
         //cout << "speed input: " << speed << "\n";
-    }
-};
-
-template<class T>
-class Damper {
-private:
-    T prev;
-    T damp(T next, float deltaT, T start = T(0)) {
-        const float DAMP = 10.0;
-
-        static T prev = start;
-
-        float prod = DAMP * deltaT;
-        T curr = prev * exp(prod) + next * (1 - exp(prod));
-
-        prev = curr;
-
-        return curr;
     }
 };
 
@@ -210,19 +193,6 @@ private:
         return to_string((int)vector.x) + " " + to_string((int)vector.y) + " " + to_string((int)vector.z);
     }
 
-    template<class T>
-    T damp(T next, T start = T(0), float damp = 50) {
-
-        static T prev = start;
-
-        float prod = - damp * inputs->deltaT;
-        T curr = prev * exp(prod) + next * (1 - exp(prod));
-
-        prev = curr;
-
-        return curr;
-    }
-
 public:
     Plane(const vector<vec3>& collisionDetectionVertices = {}, const vec3 &initialPosition = vec3(0), const quat &initialRotation = quat(1, 0, 0, 0)) :
             position(initialPosition),
@@ -242,13 +212,14 @@ public:
         updateUAxes();
 
         float wingLift = wingLiftFunction((inverse(uAxes) * speed).z);
+        static auto rotationDamper = Damper<quat>(75, {1, 0, 0, 0});
 
-        rotation = damp(
+        rotation = rotationDamper.damp(
                 rotation
                 * rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.roll * inputs->deltaT, vec3(1, 0, 0))
                 * rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.yaw * inputs->deltaT, vec3(0, 1, 0))
                 * rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.pitch * inputs->deltaT, vec3(0, 0, 1)),
-                {1, 0, 0, 0});
+                inputs->deltaT);
 
         speed += inputs->deltaT * externalAccelerations; // external accelerations (doesn't require multiplying by uAxes: already in world coordinates)
         speed += inputs->deltaT * uAxes * (

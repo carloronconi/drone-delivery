@@ -592,9 +592,8 @@ class Game : public BaseProject {
         const float camHeight = 0.25;
         const float camDistance = 25.0;
         const float camPitch = 0.5;
-        const float DAMP = 10.0;
 
-        static vec3 posOld = {0, 0, 0};
+        static auto posDamper = Damper<vec3>(10);
 
         vec3 posNew =
                 world
@@ -605,12 +604,7 @@ class Game : public BaseProject {
                           1);
         posNew.y = std::max(posNew.y, 0.5f); // avoids camera from going below the ground level
 
-        float prod = - DAMP * userInputs.deltaT;
-        vec3 pos = posOld * exp(prod) + posNew * (1 - exp(prod));
-
-        posOld = pos;
-
-        return pos;
+        return posDamper.damp(posNew, userInputs.deltaT);
     }
 };
 
