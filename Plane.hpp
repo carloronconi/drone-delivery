@@ -233,10 +233,6 @@ public:
 
         position += speed * inputs->deltaT;
 
-        /**
-         * compute the terrain.y of the closest xz point of terrain mesh and then change comparison below to position.y < terrain.y
-         */
-
         detectCollisions();
         reactToCollision();
 
