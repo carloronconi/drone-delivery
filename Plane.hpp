@@ -15,6 +15,20 @@ using namespace std;
 
 enum Collision {NONE, GROUND, MESH};
 
+struct ControlsMapping {
+    float yaw;
+    float pitch;
+    float roll;
+    float speed;
+
+    void map(UserInputs inputs) {
+        yaw = - inputs.m.x; // AD
+        pitch = inputs.r.y; // left and right arrows
+        roll = - inputs.r.x; // up and down arrows
+        speed = inputs.m.z; // WS
+    }
+};
+
 class Plane {
 private:
     // state of the plane in world coordinates
@@ -32,6 +46,7 @@ private:
 
     // reference to command inputs used to update the world matrix
     const UserInputs& inputs;
+    ControlsMapping controls;
 
     // constants
     // rotation and motion speed
@@ -187,18 +202,19 @@ public:
      * @return updated world matrix
      */
     mat4 computeWorldMatrix() {
+        controls.map(inputs);
         updateUAxes();
 
         float wingLift = wingLiftFunction((inverse(uAxes) * speed).z);
 
         rotation *=
-                rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * inputs.r.x * inputs.deltaT, vec3(- 1, 0, 0))
-                * rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * inputs.r.y * inputs.deltaT, vec3(0, - 1, 0))
-                * rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * inputs.r.z * inputs.deltaT, vec3(0, 0, - 1));
+                rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.roll * inputs.deltaT, vec3(1, 0, 0))
+                * rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.yaw * inputs.deltaT, vec3(0, 1, 0))
+                * rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.pitch * inputs.deltaT, vec3(0, 0, 1));
 
         speed += inputs.deltaT * externalAccelerations; // external accelerations (doesn't require multiplying by uAxes: already in world coordinates)
         speed += inputs.deltaT * uAxes * (
-                vec3(0.0f, 0.0f, inputs.m.z) * ENGINE_ACCELERATION
+                vec3(0.0f, 0.0f, controls.speed) * ENGINE_ACCELERATION
                 // acceleration due to plane wings generating lift linear with speed
                 + vec3(0.0, std::cos(WING_LIFT_ANGLE) * wingLift, - WING_INEFFICIENCY * std::sin(WING_LIFT_ANGLE) * wingLift)
         );
