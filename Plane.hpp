@@ -45,21 +45,21 @@ private:
     const float MAX_WING_LIFT = 5.5f;
     const float WING_LIFT_ANGLE = glm::radians(30.0f);
     const float WING_INEFFICIENCY = 1.1f;
-    const bool PRINT_DEBUG = false;
+    const bool PRINT_DEBUG = true;
     const float ROT_DAMPING = 30.0;
+    // friction deceleration in plane coordinates (z factor already accounted for in wing inefficiency)
+    const vec3 FRICTION = vec3(5, 4, 1);
+    // all external accelerations including gravity
+    // e.g. gravity only would be (0, -9.81, 0)
+    // e.g. gravity plus x-wind would be (2.5, -9.81, 0)
+    const vec3 EXTERNAL_ACCELERATIONS{0, -3, 0};
 
     // state of the plane in world coordinates
     vec3 position;
     quat rotation;
     mat4 lastWorldMatrix;
     vec3 speed{0, 0, 0};
-    vec3 externalAccelerations{0, - 3, 0};
-    // e.g. gravity only would be (0, -9.81, 0)
-    // e.g. gravity plus x-wind would be (2.5, -9.81, 0)
     mat3 uAxes;
-
-    // friction deceleration in plane coordinates
-    vec3 planeCoordinatesFriction{5, 1, 1};
 
     // reference to command inputs used to update the world matrix
     UserInputs* inputs;
@@ -226,7 +226,7 @@ public:
                 * rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.pitch * inputs->deltaT, vec3(0, 0, 1)),
                 inputs->deltaT);
 
-        speed += inputs->deltaT * externalAccelerations; // external accelerations (doesn't require multiplying by uAxes: already in world coordinates)
+        speed += inputs->deltaT * EXTERNAL_ACCELERATIONS; // external accelerations (doesn't require multiplying by uAxes: already in world coordinates)
         speed += inputs->deltaT * uAxes * (
                 vec3(0.0f, 0.0f, controls.speed) * ENGINE_ACCELERATION
                 // acceleration due to plane wings generating lift linear with speed
@@ -235,8 +235,8 @@ public:
 
         // friction deceleration and speed limiting are computed in plane space
         vec3 planeSpeed = inverse(uAxes) * speed; // convert speed from world to plane space
-        // plane speed is reduced by acceleration coordinates times deltaT in the opposite direction of plane speed
-        planeSpeed -= planeCoordinatesFriction * inputs->deltaT * normalize(planeSpeed);
+        // plane speed is reduced by dynamic friction in the opposite direction of plane speed
+        planeSpeed -= inputs->deltaT * vec3{FRICTION.x * planeSpeed.x, FRICTION.y * planeSpeed.y, FRICTION.z * planeSpeed.z};
         // plane speed magnitude (misleadingly named glm::length) is capped at max speed by multiplying the scalar for the direction of plane speed
         if (glm::length(planeSpeed) > MAX_SPEED) planeSpeed = MAX_SPEED * normalize(planeSpeed);
         speed = uAxes * planeSpeed; // update world speed converting back from plane speed
