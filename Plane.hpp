@@ -55,16 +55,15 @@ private:
     const vec3 EXTERNAL_ACCELERATIONS{0, -3, 0};
 
     // state of the plane in world coordinates
-    vec3 position;
-    quat rotation;
+    vec3 position, velocity{0, 0, 0};
+    quat rotation; vec3 rotSpeed{0, 0, 0};
     mat4 lastWorldMatrix;
-    vec3 speed{0, 0, 0};
     mat3 uAxes;
 
     // reference to command inputs used to update the world matrix
     UserInputs* inputs;
     ControlsMapping controls;
-    Damper<quat> rotationDamper = Damper<quat>(ROT_DAMPING, {1, 0, 0, 0});
+    Damper<vec3> rotationDamper = Damper<vec3>(ROT_DAMPING, {0, 0, 0});
 
     // list of vertices of models for which we want collision detection
     const vector<vec3>& verticesToAvoid;
@@ -130,7 +129,7 @@ private:
              */
             case GROUND: {
                 position.y = 0;
-                speed.y = 0;
+                velocity.y = 0;
 
                 rotationDamper.reset();
                 rotation = rotationDamper.damp(
@@ -146,12 +145,12 @@ private:
              * among the last collisions, also teleport the plane back to the center (to avoid "sinking" into buildings)
              */
             case MESH: {
-                speed = {speed.x * MESH_COLLISION_BOUNCE.x,
-                         speed.y * MESH_COLLISION_BOUNCE.y,
-                         speed.z * MESH_COLLISION_BOUNCE.z};
+                velocity = {velocity.x * MESH_COLLISION_BOUNCE.x,
+                            velocity.y * MESH_COLLISION_BOUNCE.y,
+                            velocity.z * MESH_COLLISION_BOUNCE.z};
                 if(countPrevMeshCollisions() > 3) {
                     position = {0, 0, 0};
-                    speed = {0, 0, 0};
+                    velocity = {0, 0, 0};
                 }
                 //cout << "COLLISION WITH BUILDING DETECTED\n";
                 cout << "prevMeshCollisions = " << countPrevMeshCollisions() << "\n";
@@ -187,7 +186,7 @@ private:
         cout << "\n";
 
         cout.width(20); cout << left << toString(position);
-        cout.width(20); cout << left << toString(speed);
+        cout.width(20); cout << left << toString(velocity);
         for (const auto& element : additionalInfo) {
             cout.width(20); cout << left << toString(element.second);
         }
@@ -217,32 +216,32 @@ public:
         controls.map(*inputs);
         updateUAxes();
 
-        float wingLift = wingLiftFunction((inverse(uAxes) * speed).z);
+        float wingLift = wingLiftFunction((inverse(uAxes) * velocity).z);
+        vec3 planeVelocity = inverse(uAxes) * velocity; // convert speed from world to plane space
 
-        rotation = rotationDamper.damp(
-                rotation
-                * rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.roll * inputs->deltaT, vec3(1, 0, 0))
-                * rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.yaw * inputs->deltaT, vec3(0, 1, 0))
-                * rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.pitch * inputs->deltaT, vec3(0, 0, 1)),
-                inputs->deltaT);
+        rotSpeed = inputs->deltaT * uAxes * vec3{
+            CONTROL_SURFACES_ROT_ACCELERATION * planeVelocity.z * controls.roll,
+            CONTROL_SURFACES_ROT_ACCELERATION * planeVelocity.z * controls.yaw,
+            CONTROL_SURFACES_ROT_ACCELERATION * planeVelocity.z * controls.pitch
+        };
+        rotation = inputs->deltaT * rotate();
 
-        speed += inputs->deltaT * EXTERNAL_ACCELERATIONS; // external accelerations (doesn't require multiplying by uAxes: already in world coordinates)
+        velocity += inputs->deltaT * EXTERNAL_ACCELERATIONS; // external accelerations (doesn't require multiplying by uAxes: already in world coordinates)
 
         // friction deceleration and speed limiting are computed in plane space
-        vec3 planeSpeed = inverse(uAxes) * speed; // convert speed from world to plane space
         // engine and wing accelerations
-        planeSpeed += inputs->deltaT * (
+        planeVelocity += inputs->deltaT * (
                 vec3(0.0f, 0.0f, controls.speed) * ENGINE_ACCELERATION
                 // acceleration due to plane wings generating lift linear with speed
                 + vec3(0.0, std::cos(WING_LIFT_ANGLE) * wingLift, - WING_INEFFICIENCY * std::sin(WING_LIFT_ANGLE) * wingLift)
         );
         // plane speed is reduced by dynamic friction in the opposite direction of plane speed
-        planeSpeed -= inputs->deltaT * vec3{FRICTION.x * planeSpeed.x, FRICTION.y * planeSpeed.y, FRICTION.z * planeSpeed.z};
+        planeVelocity -= inputs->deltaT * vec3{FRICTION.x * planeVelocity.x, FRICTION.y * planeVelocity.y, FRICTION.z * planeVelocity.z};
         // plane speed magnitude (misleadingly named glm::length) is capped at max speed by multiplying the scalar for the direction of plane speed
-        if (glm::length(planeSpeed) > MAX_SPEED) planeSpeed = MAX_SPEED * normalize(planeSpeed);
-        speed = uAxes * planeSpeed; // update world speed converting back from plane speed
+        if (glm::length(planeVelocity) > MAX_SPEED) planeVelocity = MAX_SPEED * normalize(planeVelocity);
+        velocity += uAxes * planeVelocity; // update world speed converting back from plane speed
 
-        position += speed * inputs->deltaT;
+        position += velocity * inputs->deltaT;
 
         detectCollisions();
         reactToCollision();
@@ -254,14 +253,14 @@ public:
 
 
         map<string, vec3> debugInfo;
-        debugInfo["Plane speed"] = planeSpeed;
+        debugInfo["Plane speed"] = planeVelocity;
         if (PRINT_DEBUG) printDebugInfo(debugInfo);
 
         return lastWorldMatrix * rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0,1,0));
     }
 
     void resetState() {
-        speed = {0, 0, 0};
+        velocity = {0, 0, 0};
         position = {0, 0, 0};
         rotation = {1, 0, 0, 0};
     }
@@ -274,7 +273,7 @@ public:
     }
 
     vec3& getSpeedInWorldCoordinates() {
-        return speed;
+        return velocity;
     }
 
     /**
