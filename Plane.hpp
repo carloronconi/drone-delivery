@@ -227,14 +227,15 @@ public:
                 inputs->deltaT);
 
         speed += inputs->deltaT * EXTERNAL_ACCELERATIONS; // external accelerations (doesn't require multiplying by uAxes: already in world coordinates)
-        speed += inputs->deltaT * uAxes * (
+
+        // friction deceleration and speed limiting are computed in plane space
+        vec3 planeSpeed = inverse(uAxes) * speed; // convert speed from world to plane space
+        // engine and wing accelerations
+        planeSpeed += inputs->deltaT * (
                 vec3(0.0f, 0.0f, controls.speed) * ENGINE_ACCELERATION
                 // acceleration due to plane wings generating lift linear with speed
                 + vec3(0.0, std::cos(WING_LIFT_ANGLE) * wingLift, - WING_INEFFICIENCY * std::sin(WING_LIFT_ANGLE) * wingLift)
         );
-
-        // friction deceleration and speed limiting are computed in plane space
-        vec3 planeSpeed = inverse(uAxes) * speed; // convert speed from world to plane space
         // plane speed is reduced by dynamic friction in the opposite direction of plane speed
         planeSpeed -= inputs->deltaT * vec3{FRICTION.x * planeSpeed.x, FRICTION.y * planeSpeed.y, FRICTION.z * planeSpeed.z};
         // plane speed magnitude (misleadingly named glm::length) is capped at max speed by multiplying the scalar for the direction of plane speed
