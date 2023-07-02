@@ -131,12 +131,9 @@ private:
                 position.y = 0;
                 velocity.y = 0;
 
-                rotationDamper.reset();
-                rotation = rotationDamper.damp(
-                        rotation
-                        * rotate(quat(1,0,0,0), rotation.x * 0.3f, vec3(- 1, 0, 0))
-                        * rotate(quat(1,0,0,0), rotation.z * 0.3f, vec3(0, 0, - 1)),
-                        inputs->deltaT);
+                //rotationDamper.reset();
+                /*rotation *= rotate(quat(1,0,0,0), rotation.x * 0.3f, vec3(- 1, 0, 0))
+                            * rotate(quat(1,0,0,0), rotation.z * 0.3f, vec3(0, 0, - 1));*/
                 //cout << "COLLISION WITH GROUND DETECTED\n";
                 break;
             }
@@ -219,12 +216,21 @@ public:
         float wingLift = wingLiftFunction((inverse(uAxes) * velocity).z);
         vec3 planeVelocity = inverse(uAxes) * velocity; // convert speed from world to plane space
 
-        rotSpeed = inputs->deltaT * uAxes * vec3{
+        rotSpeed += inputs->deltaT * uAxes * vec3{
             CONTROL_SURFACES_ROT_ACCELERATION * planeVelocity.z * controls.roll,
             CONTROL_SURFACES_ROT_ACCELERATION * planeVelocity.z * controls.yaw,
             CONTROL_SURFACES_ROT_ACCELERATION * planeVelocity.z * controls.pitch
         };
-        rotation = inputs->deltaT * rotate();
+        //* rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.roll * inputs->deltaT, vec3(1, 0, 0))
+        //* rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.yaw * inputs->deltaT, vec3(0, 1, 0))
+        //* rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.pitch * inputs->deltaT, vec3(0, 0, 1))
+        // s = s0 + v0 * t + 0.5 * a * t^2
+        // v = v0 + a * t
+
+        rotation += inputs->deltaT
+                * rotate(quat(1,0,0,0), rotSpeed.x, vec3(1, 0, 0))
+                * rotate(quat(1,0,0,0), rotSpeed.y, vec3(0, 1, 0))
+                * rotate(quat(1,0,0,0), rotSpeed.z, vec3(0, 0, 1));
 
         velocity += inputs->deltaT * EXTERNAL_ACCELERATIONS; // external accelerations (doesn't require multiplying by uAxes: already in world coordinates)
 
