@@ -45,8 +45,8 @@ private:
     const float MAX_WING_LIFT = 5.5f;
     const float WING_LIFT_ANGLE = glm::radians(30.0f);
     const float WING_INEFFICIENCY = 1.1f;
-    const bool PRINT_DEBUG = true;
-    const float ROT_DAMPING = 30.0;
+    const bool PRINT_DEBUG = false;
+    const float ROT_DAMPING = 5.0;
     // friction deceleration in plane coordinates (z factor already accounted for in wing inefficiency)
     const vec3 FRICTION = vec3(5, 4, 1);
     // all external accelerations including gravity
@@ -64,7 +64,9 @@ private:
     // reference to command inputs used to update the world matrix
     UserInputs* inputs;
     ControlsMapping controls;
-    Damper<quat> rotationDamper = Damper<quat>(ROT_DAMPING, {1, 0, 0, 0});
+    // rotation is implemented without explicit rotSpeed term, but uses damper instead - using Damper<quat> introduces world mat deformations
+    // so 3 separate dampers are required
+    Damper<float> rollDamper = Damper<float>(ROT_DAMPING), yawDamper = Damper<float>(ROT_DAMPING), pitchDamper = Damper<float>(ROT_DAMPING);
 
     // list of vertices of models for which we want collision detection
     const vector<vec3>& verticesToAvoid;
@@ -132,12 +134,9 @@ private:
                 position.y = 0;
                 speed.y = 0;
 
-                rotationDamper.reset();
-                rotation = rotationDamper.damp(
-                        rotation
-                        * rotate(quat(1,0,0,0), rotation.x * 0.3f, vec3(- 1, 0, 0))
-                        * rotate(quat(1,0,0,0), rotation.z * 0.3f, vec3(0, 0, - 1)),
-                        inputs->deltaT);
+                rotation *= rotate(quat(1,0,0,0), rotation.x * 0.5f, vec3(- 1, 0, 0))
+                            * rotate(quat(1,0,0,0), rotation.z * 0.5f, vec3(0, 0, - 1));
+
                 //cout << "COLLISION WITH GROUND DETECTED\n";
                 break;
             }
@@ -219,12 +218,9 @@ public:
 
         float wingLift = wingLiftFunction((inverse(uAxes) * speed).z);
 
-        rotation = rotationDamper.damp(
-                rotation
-                * rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.roll * inputs->deltaT, vec3(1, 0, 0))
-                * rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.yaw * inputs->deltaT, vec3(0, 1, 0))
-                * rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.pitch * inputs->deltaT, vec3(0, 0, 1)),
-                inputs->deltaT);
+        rotation *= rotate(quat(1,0,0,0), rollDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.roll * inputs->deltaT, inputs->deltaT), vec3(1, 0, 0))
+                * rotate(quat(1,0,0,0), yawDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.yaw * inputs->deltaT, inputs->deltaT), vec3(0, 1, 0))
+                * rotate(quat(1,0,0,0), pitchDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.pitch * inputs->deltaT, inputs->deltaT), vec3(0, 0, 1));
 
         speed += inputs->deltaT * EXTERNAL_ACCELERATIONS; // external accelerations (doesn't require multiplying by uAxes: already in world coordinates)
 
