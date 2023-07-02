@@ -36,7 +36,7 @@ class Plane {
 private:
     // constants
     // rotation and motion speed
-    const float CONTROL_SURFACES_ROT_ACCELERATION = glm::radians(30.0f);
+    const float CONTROL_SURFACES_ROT_ACCELERATION = glm::radians(15.0f);
     const float ENGINE_ACCELERATION = 10.0f;
     const float MAX_SPEED = 10.0f;
     // plane physics parameters
@@ -46,7 +46,7 @@ private:
     const float WING_LIFT_ANGLE = glm::radians(30.0f);
     const float WING_INEFFICIENCY = 1.1f;
     const bool PRINT_DEBUG = true;
-    const float ROT_DAMPING = 30.0;
+    const float ROT_DAMPING = 5.0;
     // friction deceleration in plane coordinates (z factor already accounted for in wing inefficiency)
     const vec3 FRICTION = vec3(5, 4, 1);
     // all external accelerations including gravity
@@ -131,9 +131,8 @@ private:
                 position.y = 0;
                 velocity.y = 0;
 
-                //rotationDamper.reset();
-                /*rotation *= rotate(quat(1,0,0,0), rotation.x * 0.3f, vec3(- 1, 0, 0))
-                            * rotate(quat(1,0,0,0), rotation.z * 0.3f, vec3(0, 0, - 1));*/
+                rotation *= rotate(quat(1,0,0,0), rotation.x * 0.3f, vec3(- 1, 0, 0))
+                            * rotate(quat(1,0,0,0), rotation.z * 0.3f, vec3(0, 0, - 1));
                 //cout << "COLLISION WITH GROUND DETECTED\n";
                 break;
             }
@@ -214,25 +213,27 @@ public:
         updateUAxes();
 
         float wingLift = wingLiftFunction((inverse(uAxes) * velocity).z);
+        velocity += inputs->deltaT * EXTERNAL_ACCELERATIONS; // external accelerations (doesn't require multiplying by uAxes: already in world coordinates)
         vec3 planeVelocity = inverse(uAxes) * velocity; // convert speed from world to plane space
 
-        rotSpeed += inputs->deltaT * uAxes * vec3{
-            CONTROL_SURFACES_ROT_ACCELERATION * planeVelocity.z * controls.roll,
-            CONTROL_SURFACES_ROT_ACCELERATION * planeVelocity.z * controls.yaw,
-            CONTROL_SURFACES_ROT_ACCELERATION * planeVelocity.z * controls.pitch
-        };
+        rotSpeed += inputs->deltaT * uAxes * rotationDamper.damp(vec3{ // control surfaces authority only depends on z-velocity
+                CONTROL_SURFACES_ROT_ACCELERATION * planeVelocity.z * controls.roll,
+                CONTROL_SURFACES_ROT_ACCELERATION * planeVelocity.z * controls.yaw,
+                CONTROL_SURFACES_ROT_ACCELERATION * planeVelocity.z * controls.pitch
+        }, inputs->deltaT);
+
+        //rotSpeed -= inputs->deltaT * vec3{FRICTION.x * rotSpeed.x, FRICTION.y * rotSpeed.y, FRICTION.z * rotSpeed.z};
+
         //* rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.roll * inputs->deltaT, vec3(1, 0, 0))
         //* rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.yaw * inputs->deltaT, vec3(0, 1, 0))
         //* rotate(quat(1,0,0,0), CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.pitch * inputs->deltaT, vec3(0, 0, 1))
         // s = s0 + v0 * t + 0.5 * a * t^2
         // v = v0 + a * t
 
-        rotation += inputs->deltaT
-                * rotate(quat(1,0,0,0), rotSpeed.x, vec3(1, 0, 0))
-                * rotate(quat(1,0,0,0), rotSpeed.y, vec3(0, 1, 0))
-                * rotate(quat(1,0,0,0), rotSpeed.z, vec3(0, 0, 1));
-
-        velocity += inputs->deltaT * EXTERNAL_ACCELERATIONS; // external accelerations (doesn't require multiplying by uAxes: already in world coordinates)
+        rotation *=
+                rotate(quat(1,0,0,0), inputs->deltaT * rotSpeed.x, vec3(1, 0, 0))
+                * rotate(quat(1,0,0,0), inputs->deltaT * rotSpeed.y, vec3(0, 1, 0))
+                * rotate(quat(1,0,0,0), inputs->deltaT * rotSpeed.z, vec3(0, 0, 1));
 
         // friction deceleration and speed limiting are computed in plane space
         // engine and wing accelerations
@@ -245,7 +246,7 @@ public:
         planeVelocity -= inputs->deltaT * vec3{FRICTION.x * planeVelocity.x, FRICTION.y * planeVelocity.y, FRICTION.z * planeVelocity.z};
         // plane speed magnitude (misleadingly named glm::length) is capped at max speed by multiplying the scalar for the direction of plane speed
         if (glm::length(planeVelocity) > MAX_SPEED) planeVelocity = MAX_SPEED * normalize(planeVelocity);
-        velocity += uAxes * planeVelocity; // update world speed converting back from plane speed
+        velocity = uAxes * planeVelocity; // update world speed converting back from plane speed
 
         position += velocity * inputs->deltaT;
 
