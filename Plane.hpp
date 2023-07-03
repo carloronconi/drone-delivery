@@ -39,6 +39,7 @@ public:
     // rotation and motion speed
     constexpr static const float CONTROL_SURFACES_ROT_ACCELERATION = glm::radians(10.0f);
     constexpr static const float ENGINE_ACCELERATION = 15.0f;
+    constexpr static const float THROTTLE_DAMPING = 40;
     constexpr static const float MAX_SPEED = 15.0f;
     // plane physics parameters
     constexpr static const float PLANE_CENTER_OF_LIFT = 1.5f;
@@ -72,6 +73,7 @@ private:
     // rotation is implemented without explicit rotSpeed term, but uses damper instead - using Damper<quat> introduces world mat deformations
     // so 3 separate dampers are required
     Damper<float> rollDamper = Damper<float>(ROT_DAMPING), yawDamper = Damper<float>(ROT_DAMPING), pitchDamper = Damper<float>(ROT_DAMPING);
+    Damper<float> throttleDamper = Damper<float>(THROTTLE_DAMPING);
 
     // list of vertices of models for which we want collision detection
     const vector<vec3>& verticesToAvoid;
@@ -221,7 +223,7 @@ public:
         vec3 planeSpeed = inverse(uAxes) * speed; // convert speed from world to plane space
         // engine and wing accelerations
         planeSpeed += inputs->deltaT * (
-                vec3(0.0f, 0.0f, controls.speed) * ENGINE_ACCELERATION
+                vec3(0.0f, 0.0f, throttleDamper.damp(controls.speed * ENGINE_ACCELERATION, inputs->deltaT))
                 // acceleration due to plane wings generating lift linear with speed
                 + vec3(0.0, std::cos(WING_LIFT_ANGLE) * wingLift, - WING_INEFFICIENCY * std::sin(WING_LIFT_ANGLE) * wingLift)
         );
