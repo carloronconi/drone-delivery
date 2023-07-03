@@ -36,23 +36,23 @@ class Plane {
 private:
     // constants
     // rotation and motion speed
-    const float CONTROL_SURFACES_ROT_ACCELERATION = glm::radians(30.0f);
-    const float ENGINE_ACCELERATION = 10.0f;
-    const float MAX_SPEED = 10.0f;
+    const float CONTROL_SURFACES_ROT_ACCELERATION = glm::radians(15.0f);
+    const float ENGINE_ACCELERATION = 15.0f;
+    const float MAX_SPEED = 15.0f;
     // plane physics parameters
     const float PLANE_CENTER_OF_LIFT = 1.5f;
     const float PLANE_SCALE = 0.1f;
-    const float MAX_WING_LIFT = 5.5f;
+    const float MAX_WING_LIFT = 10;
     const float WING_LIFT_ANGLE = glm::radians(30.0f);
     const float WING_INEFFICIENCY = 1.1f;
     const bool PRINT_DEBUG = false;
     const float ROT_DAMPING = 5.0;
     // friction deceleration in plane coordinates (z factor already accounted for in wing inefficiency)
-    const vec3 FRICTION = vec3(5, 4, 1);
+    const vec3 FRICTION = vec3(5, 10, 1);
     // all external accelerations including gravity
     // e.g. gravity only would be (0, -9.81, 0)
     // e.g. gravity plus x-wind would be (2.5, -9.81, 0)
-    const vec3 EXTERNAL_ACCELERATIONS{0, -3, 0};
+    const vec3 EXTERNAL_ACCELERATIONS{0, -9.81, 0};
 
     // state of the plane in world coordinates
     vec3 position;
