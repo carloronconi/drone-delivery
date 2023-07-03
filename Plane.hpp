@@ -10,6 +10,7 @@
 #include "UserInputs.hpp"
 #include <ctime>
 #include "Damper.hpp"
+#include "Wing.hpp"
 
 using namespace glm;
 using namespace std;
@@ -33,34 +34,37 @@ struct ControlsMapping {
 
 
 class Plane {
-private:
+public:
     // constants
     // rotation and motion speed
-    const float CONTROL_SURFACES_ROT_ACCELERATION = glm::radians(15.0f);
-    const float ENGINE_ACCELERATION = 15.0f;
-    const float MAX_SPEED = 15.0f;
+    constexpr static const float CONTROL_SURFACES_ROT_ACCELERATION = glm::radians(10.0f);
+    constexpr static const float ENGINE_ACCELERATION = 15.0f;
+    constexpr static const float MAX_SPEED = 15.0f;
     // plane physics parameters
-    const float PLANE_CENTER_OF_LIFT = 1.5f;
-    const float PLANE_SCALE = 0.1f;
-    const float MAX_WING_LIFT = 10;
-    const float WING_LIFT_ANGLE = glm::radians(15.0f);
-    const float WING_INEFFICIENCY = 1.1f;
-    const bool PRINT_DEBUG = false;
-    const float ROT_DAMPING = 5.0;
+    constexpr static const float PLANE_CENTER_OF_LIFT = 1.5f;
+    constexpr static const float PLANE_SCALE = 0.1f;
+    constexpr static const float MAX_WING_LIFT = 10;
+    constexpr static const float BASE = 2;
+    constexpr static const float WING_LIFT_ANGLE = glm::radians(15.0f);
+    constexpr static const float WING_INEFFICIENCY = 1.1f;
+    constexpr static const bool PRINT_DEBUG = false;
+    constexpr static const float ROT_DAMPING = 5.0;
     // friction deceleration in plane coordinates (z factor already accounted for in wing inefficiency)
-    const vec3 FRICTION = vec3(5, 1, 1);
+    constexpr static const vec3 FRICTION = vec3(5, 1, 1);
     // all external accelerations including gravity
     // e.g. gravity only would be (0, -9.81, 0)
     // e.g. gravity plus x-wind would be (2.5, -9.81, 0)
-    const vec3 EXTERNAL_ACCELERATIONS{0, -9.81, 0};
-    const float GROUND_COLLISION_ROT = 0.3;
+    constexpr static const vec3 EXTERNAL_ACCELERATIONS{0, -9.81, 0};
+    constexpr static const float GROUND_COLLISION_ROT = 0.3;
 
+private:
     // state of the plane in world coordinates
     vec3 position;
     quat rotation;
     mat4 lastWorldMatrix;
     vec3 speed{0, 0, 0};
     mat3 uAxes;
+    const Wing& wing;
 
     // reference to command inputs used to update the world matrix
     UserInputs* inputs;
@@ -75,20 +79,6 @@ private:
     Collision collision = NONE;
     const vec3 MESH_COLLISION_BOUNCE = {-0.9, -1.1, -0.9};
     vector<Collision> prevCollisions;
-
-    /**
-     * computes the module of the lift acceleration produced by a wing
-     * @param orthogonalSpeed module of the plane speed orthogonal to the wing surface
-     * @return lift acceleration produced by the wing
-     */
-    float wingLiftFunction(float orthogonalSpeed) const {
-        if (orthogonalSpeed < - MAX_SPEED) return - MAX_WING_LIFT;
-        if (orthogonalSpeed < 0) return orthogonalSpeed;
-        if (orthogonalSpeed < MAX_SPEED) { // parabolic curve passing from origin and with maximum in (MAX_SPEED, MAX_WING_LIFT)
-            return (- (MAX_WING_LIFT / (MAX_SPEED * MAX_SPEED)) * orthogonalSpeed + 2 * MAX_WING_LIFT / MAX_SPEED) * orthogonalSpeed;
-        }
-        return MAX_WING_LIFT;
-    }
 
     /**
      * Collision detection algorithm
@@ -200,7 +190,9 @@ private:
     }
 
 public:
-    Plane(const vector<vec3>& collisionDetectionVertices = {}, const vec3 &initialPosition = vec3(0), const quat &initialRotation = quat(1, 0, 0, 0)) :
+    Plane(const Wing& wing, const vector<vec3>& collisionDetectionVertices = {}, const vec3 &initialPosition = vec3(0),
+          const quat &initialRotation = quat(1, 0, 0, 0)) :
+            wing(wing),
             position(initialPosition),
             rotation(initialRotation),
             verticesToAvoid(collisionDetectionVertices) {}
@@ -217,7 +209,7 @@ public:
         controls.map(*inputs);
         updateUAxes();
 
-        float wingLift = wingLiftFunction((inverse(uAxes) * speed).z);
+        float wingLift = wing.computeLift((inverse(uAxes) * speed).z);
 
         rotation *= rotate(quat(1,0,0,0), rollDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.roll * inputs->deltaT, inputs->deltaT), vec3(1, 0, 0))
                 * rotate(quat(1,0,0,0), yawDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.yaw * inputs->deltaT, inputs->deltaT), vec3(0, 1, 0))
