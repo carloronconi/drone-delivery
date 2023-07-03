@@ -169,6 +169,26 @@ private:
         prevCollisions.insert(prevCollisions.begin(), collision);
     }
 
+    /**
+     * makes flying the plane easier by automatically applying a small amount of roll to return the plane back to neutral roll
+     * simulates plane with stable V-wing configuration
+     * @return value between -1 and 1 similar to stick input
+     */
+    float computeAutoRollRotation() {
+        /**
+         * complexity comes from quaternion to euler conversion: different equivalent euler triplets representations for a single
+         * euler angle exist, meaning sometimes eulerAngles doesn't return the most "logical" triplet
+         * to fix it, try all the cases and see what triplet is returned and change push accordingly
+         */
+        float roll = eulerAngles(rotation).y;
+        float push = 0;
+        if (0.0 >= roll && roll < M_PI / 2.0) push = - 2.0 * roll / M_PI; // push linearly harder for bigger roll angles
+        else if (3.0 * M_PI / 2.0 <= roll && roll < 2.0 * M_PI) push = 2.0 * roll / (3.0 * M_PI);
+        // no push when the plane is flying inverted - with roll between pi/ 2 and 3pi/2
+        //cout << "autoroll: " << push << "\n";
+        return 0.0; // return push;
+    }
+
     void updateUAxes() {
         // unitary-length axes xyz in plane coordinate rotated to xyz axes in world space
         // used to pass from plane's coordinate system to world coordinate system
@@ -228,7 +248,7 @@ public:
 
         float wingLift = wing.computeLift((inverse(uAxes) * speed).z);
 
-        rotation *= rotate(quat(1,0,0,0), rollDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.x * wingLift * controls.roll * inputs->deltaT, inputs->deltaT), vec3(1, 0, 0))
+        rotation *= rotate(quat(1,0,0,0), rollDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.x * wingLift * (controls.roll - computeAutoRollRotation()) * inputs->deltaT, inputs->deltaT), vec3(1, 0, 0))
                 * rotate(quat(1,0,0,0), yawDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.y * wingLift * controls.yaw * inputs->deltaT, inputs->deltaT), vec3(0, 1, 0))
                 * rotate(quat(1,0,0,0), pitchDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.z * wingLift * controls.pitch * inputs->deltaT, inputs->deltaT), vec3(0, 0, 1));
 
