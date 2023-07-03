@@ -37,7 +37,7 @@ class Plane {
 public:
     // constants
     // rotation and motion speed
-    constexpr static const float CONTROL_SURFACES_ROT_ACCELERATION = glm::radians(10.0f);
+    constexpr static const vec3 CONTROL_SURFACES_ROT_ACCELERATION{radians(10.0), radians(5.0), radians(10.0)};
     constexpr static const float ENGINE_ACCELERATION = 15.0f;
     constexpr static const float THROTTLE_DAMPING = 40;
     constexpr static const float MAX_SPEED = 15.0f;
@@ -213,9 +213,9 @@ public:
 
         float wingLift = wing.computeLift((inverse(uAxes) * speed).z);
 
-        rotation *= rotate(quat(1,0,0,0), rollDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.roll * inputs->deltaT, inputs->deltaT), vec3(1, 0, 0))
-                * rotate(quat(1,0,0,0), yawDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.yaw * inputs->deltaT, inputs->deltaT), vec3(0, 1, 0))
-                * rotate(quat(1,0,0,0), pitchDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION * wingLift * controls.pitch * inputs->deltaT, inputs->deltaT), vec3(0, 0, 1));
+        rotation *= rotate(quat(1,0,0,0), rollDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.x * wingLift * controls.roll * inputs->deltaT, inputs->deltaT), vec3(1, 0, 0))
+                * rotate(quat(1,0,0,0), yawDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.y * wingLift * controls.yaw * inputs->deltaT, inputs->deltaT), vec3(0, 1, 0))
+                * rotate(quat(1,0,0,0), pitchDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.z * wingLift * controls.pitch * inputs->deltaT, inputs->deltaT), vec3(0, 0, 1));
 
         speed += inputs->deltaT * EXTERNAL_ACCELERATIONS; // external accelerations (doesn't require multiplying by uAxes: already in world coordinates)
 
