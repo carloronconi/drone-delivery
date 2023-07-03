@@ -458,7 +458,7 @@ class Game : public BaseProject {
         gubo.DlightDir = glm::normalize(glm::vec3(1, 2, 3));
         gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
         gubo.AmbLightColor = glm::vec3(0.1f);
-        gubo.eyePos = glm::vec3(100.0, 100.0, 100.0);
+        gubo.eyePos = camPos;
         // Writes value to the GPU
         DSGubo.map(currentImage, &gubo, sizeof(gubo), 0);
         // the .map() method of a DataSet object, requires the current image of the swap chain as first parameter
