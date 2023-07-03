@@ -43,16 +43,17 @@ private:
     const float PLANE_CENTER_OF_LIFT = 1.5f;
     const float PLANE_SCALE = 0.1f;
     const float MAX_WING_LIFT = 10;
-    const float WING_LIFT_ANGLE = glm::radians(30.0f);
+    const float WING_LIFT_ANGLE = glm::radians(15.0f);
     const float WING_INEFFICIENCY = 1.1f;
     const bool PRINT_DEBUG = false;
     const float ROT_DAMPING = 5.0;
     // friction deceleration in plane coordinates (z factor already accounted for in wing inefficiency)
-    const vec3 FRICTION = vec3(5, 10, 1);
+    const vec3 FRICTION = vec3(5, 1, 1);
     // all external accelerations including gravity
     // e.g. gravity only would be (0, -9.81, 0)
     // e.g. gravity plus x-wind would be (2.5, -9.81, 0)
     const vec3 EXTERNAL_ACCELERATIONS{0, -9.81, 0};
+    const float GROUND_COLLISION_ROT = 0.3;
 
     // state of the plane in world coordinates
     vec3 position;
@@ -134,8 +135,8 @@ private:
                 position.y = 0;
                 speed.y = 0;
 
-                rotation *= rotate(quat(1,0,0,0), rotation.x * 0.5f, vec3(- 1, 0, 0))
-                            * rotate(quat(1,0,0,0), rotation.z * 0.5f, vec3(0, 0, - 1));
+                rotation *= rotate(quat(1,0,0,0), rotation.x * GROUND_COLLISION_ROT, vec3(- 1, 0, 0))
+                            * rotate(quat(1,0,0,0), rotation.z * GROUND_COLLISION_ROT, vec3(0, 0, - 1));
 
                 //cout << "COLLISION WITH GROUND DETECTED\n";
                 break;
