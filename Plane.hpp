@@ -91,10 +91,6 @@ private:
      * not be detected if the plane collided in the middle of the cube's face, because no vertex would be found close to the plane.
      */
     void detectCollisions() {
-        if (position.y < 0) {
-            collision = GROUND;
-            return; // simplest case: don't go below the ground
-        }
         glm::vec3 highestPoint = {0.0, -1.0, 0.0};
         for (auto p : verticesToAvoid) {
             // this condition checks a vertical cylinder of points of radius COLLISION_DISTANCE and takes the point inside
@@ -103,7 +99,15 @@ private:
                 highestPoint = p;
             }
         }
-        collision = highestPoint.y > position.y ? MESH : NONE;
+        if (highestPoint.y > position.y) { // mesh collisions have priority over ground collisions (in case both are happening)
+            collision = MESH;
+            return;
+        }
+        if (position.y < 0) {
+            collision = GROUND; // simplest case: don't go below the ground
+            return;
+        }
+        collision = NONE;
     }
 
     int countPrevMeshCollisions() {
