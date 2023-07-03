@@ -23,6 +23,9 @@ struct ControlsMapping {
     float roll;
     float speed;
 
+    /**
+     * convert game-supplied inputs in logically simpler controls for a plane
+     */
     void map(UserInputs inputs) {
         yaw = - inputs.m.x; // AD
         pitch = inputs.r.y; // left and right arrows
@@ -41,6 +44,7 @@ public:
     constexpr static const float ENGINE_ACCELERATION = 15.0f;
     constexpr static const float THROTTLE_DAMPING = 40;
     constexpr static const float MAX_SPEED = 15.0f;
+    constexpr static const float ROT_DAMPING = 5.0;
     // plane physics parameters
     constexpr static const float PLANE_CENTER_OF_LIFT = 1.5f;
     constexpr static const float PLANE_SCALE = 0.1f;
@@ -49,14 +53,18 @@ public:
     constexpr static const float WING_LIFT_ANGLE = glm::radians(15.0f);
     constexpr static const float WING_INEFFICIENCY = 1.1f;
     constexpr static const bool PRINT_DEBUG = false;
-    constexpr static const float ROT_DAMPING = 5.0;
     // friction deceleration in plane coordinates (z factor already accounted for in wing inefficiency)
     constexpr static const vec3 FRICTION = vec3(5, 1, 1);
     // all external accelerations including gravity
     // e.g. gravity only would be (0, -9.81, 0)
     // e.g. gravity plus x-wind would be (2.5, -9.81, 0)
     constexpr static const vec3 EXTERNAL_ACCELERATIONS{0, -9.81, 0};
+    // collision constants
     constexpr static const float GROUND_COLLISION_ROT = 0.3;
+    constexpr static const float COLLISION_DISTANCE = 1.0f;
+    constexpr static const vec3 MESH_COLLISION_BOUNCE = {-0.9, -1.1, -0.9};
+    constexpr static const int SUCCESSIVE_MESH_COLLISIONS = 3;
+    constexpr static const int PREV_COLLISIONS_SIZE = 10;
 
 private:
     // state of the plane in world coordinates
@@ -77,9 +85,8 @@ private:
 
     // list of vertices of models for which we want collision detection
     const vector<vec3>& verticesToAvoid;
-    const float COLLISION_DISTANCE = 1.0f;
+
     Collision collision = NONE;
-    const vec3 MESH_COLLISION_BOUNCE = {-0.9, -1.1, -0.9};
     vector<Collision> prevCollisions;
 
     /**
@@ -110,6 +117,10 @@ private:
         collision = NONE;
     }
 
+    /**
+     * helps counting multiple close MESH collisions (due to bouncing) as a single one
+     * @return number of previous MESH collisions in the last PREV_COLLISIONS_SIZE collisions
+     */
     int countPrevMeshCollisions() {
         int count = 0;
         for (auto c : prevCollisions) {
@@ -138,14 +149,14 @@ private:
                 break;
             }
             /**
-             * collision with mesh (building): "bounce" the plane back and if too many consecutive mesh collisions (>3/10)
+             * collision with mesh (building): "bounce" the plane back and if too many consecutive mesh collisions (>SUCCESSIVE_MESH_COLLISIONS/PREV_COLLISIONS_SIZE)
              * among the last collisions, also teleport the plane back to the center (to avoid "sinking" into buildings)
              */
             case MESH: {
                 speed = {speed.x * MESH_COLLISION_BOUNCE.x,
                          speed.y * MESH_COLLISION_BOUNCE.y,
                          speed.z * MESH_COLLISION_BOUNCE.z};
-                if(countPrevMeshCollisions() > 3) {
+                if(countPrevMeshCollisions() > SUCCESSIVE_MESH_COLLISIONS) {
                     position = {0, 0, 0};
                     speed = {0, 0, 0};
                 }
@@ -154,7 +165,7 @@ private:
                 break;
             }
         }
-        if (prevCollisions.size() >= 10) prevCollisions.pop_back();
+        if (prevCollisions.size() >= PREV_COLLISIONS_SIZE) prevCollisions.pop_back();
         prevCollisions.insert(prevCollisions.begin(), collision);
     }
 
@@ -243,16 +254,18 @@ public:
         reactToCollision();
 
         lastWorldMatrix = translate(mat4(1), vec3(position.x, position.y + PLANE_CENTER_OF_LIFT * PLANE_SCALE, position.z)) *
-                          rotate(mat4(rotation), glm::radians(270.0f), glm::vec3(0, 1, 0)) *
+                          rotate(mat4(rotation), glm::radians(0.0f), glm::vec3(0, 1, 0)) *
                           glm::scale(glm::mat4(1), glm::vec3(PLANE_SCALE)) * //additional transform to scale down the character in character space
                           glm::translate(glm::mat4(1), glm::vec3(0.0, - PLANE_CENTER_OF_LIFT, 0.0));
 
 
-        map<string, vec3> debugInfo;
-        debugInfo["Plane speed"] = planeSpeed;
-        if (PRINT_DEBUG) printDebugInfo(debugInfo);
+        if (PRINT_DEBUG) {
+            map<string, vec3> debugInfo;
+            debugInfo["Plane speed"] = planeSpeed;
+            printDebugInfo(debugInfo);
+        }
 
-        return lastWorldMatrix * rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0,1,0));
+        return lastWorldMatrix;
     }
 
     void resetState() {
@@ -274,7 +287,7 @@ public:
 
     /**
      * tells if a life-decreasing detection is detected
-     * right now only building collisions are consiidered life-decreasing, but implementation can change to include ground
+     * right now only building collisions are considered life-decreasing, but implementation can change to include ground
      */
     bool isCollisionDetected() {
         return collision == MESH;
