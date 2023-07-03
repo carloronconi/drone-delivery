@@ -52,8 +52,7 @@ class Game : public BaseProject {
             glm::vec3(-16, 0, -16)};
 
     LogarithmicWing wingImplementation = LogarithmicWing(Plane::MAX_WING_LIFT, Plane::MAX_SPEED, Plane::BASE);
-    Wing* wing = &wingImplementation;
-    Plane* const plane = new Plane(*wing, collisionDetectionVertices);
+    Plane* const plane = new Plane(wingImplementation, collisionDetectionVertices);
     Package* const box = new Package(plane->getPositionInWorldCoordinates(), plane->getSpeedInWorldCoordinates(), targetPos);
     const float SCORE_OFFSET = 0.15;
     const glm::vec2 SCORE_BOTTOM_LEFT = {-0.9f, 0.8f};
