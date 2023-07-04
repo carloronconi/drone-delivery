@@ -15,28 +15,28 @@ class Game : public BaseProject {
 	float Ar;
 
 	// Descriptor Layouts ["classes" of what will be passed to the shaders]
-	DescriptorSetLayout DSLGubo, DSLMesh, DSLOverlay;
+	DescriptorSetLayout DSLGubo, DSLMesh, DSLOpaque, DSLOverlay;
 
 	// Vertex formats
-	VertexDescriptor VMesh;
-	VertexDescriptor VOverlay;
+	VertexDescriptor VMesh, VOpaque, VOverlay;
 
 	// Pipelines [Shader couples]
-	Pipeline PMesh;
-	Pipeline POverlay;
+	Pipeline PMesh, POpaque, POverlay;
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
-	Model<VertexMesh> MPlane, MArrow, MBox, MGround; /** one per model **/
-	std::array<Model<VertexMesh>, 4> MPark;
+	Model<VertexMesh> MPlane, MArrow; /** one per model **/
+	Model<VertexOpaque> MBox, MGround;
+	std::array<Model<VertexOpaque>, 4> MPark;
 	Model<VertexOverlay> MScore, MLife, MSplash, MWin, MLose;
 	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSScore, DSLife, DSSplash, DSWin, DSLose, DSGround; /** one per instance of model **/
 	std::array<DescriptorSet, 4> DSPark;
 	Texture TCity, TArrow, TGround, TScore, TLife, TSplash, TWin, TLose;
 	
 	// C++ storage for uniform variables
-	MeshUniformBlock uboPlane, uboArrow, uboBox, uboGround;
-    std::array<MeshUniformBlock, 4> uboPark;
+	MeshUniformBlock uboPlane, uboArrow;
+    OpaqueUniformBlock uboBox, uboGround;
+    std::array<OpaqueUniformBlock, 4> uboPark;
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboScore, uboLife, uboSplash, uboWin, uboLose;
 
@@ -111,6 +111,11 @@ class Game : public BaseProject {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
 					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
 				});
+
+        DSLOpaque.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
+                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
+        });
 				
 		DSLOverlay.init(this, {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
@@ -157,6 +162,17 @@ class Game : public BaseProject {
 				         sizeof(glm::vec2), UV}
 				});
 
+        VOpaque.init(this, {
+                {0, sizeof(VertexOpaque), VK_VERTEX_INPUT_RATE_VERTEX}
+        }, {
+                           {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexOpaque, pos),
+                                   sizeof(glm::vec3), POSITION},
+                           {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexOpaque, norm),
+                                   sizeof(glm::vec3), NORMAL},
+                           {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexOpaque, UV),
+                                   sizeof(glm::vec2), UV}
+                   });
+
 		VOverlay.init(this, {
 				  {0, sizeof(VertexOverlay), VK_VERTEX_INPUT_RATE_VERTEX}
 				}, {
@@ -172,6 +188,7 @@ class Game : public BaseProject {
 		// The last array, is a vector of pointer to the layouts of the sets that will
 		// be used in this pipeline. The first element will be set 0, and so on..
 		PMesh.init(this, &VMesh, "shaders/MeshVert.spv", "shaders/MeshFrag.spv", {&DSLGubo, &DSLMesh});
+        POpaque.init(this, &VOpaque, "shaders/OpaqueVert.spv", "shaders/OpaqueFrag.spv", {&DSLGubo, &DSLOpaque});
 		POverlay.init(this, &VOverlay, "shaders/OverlayVert.spv", "shaders/OverlayFrag.spv", {&DSLOverlay});
 		POverlay.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
  								    VK_CULL_MODE_NONE, true);
@@ -184,12 +201,12 @@ class Game : public BaseProject {
 		// The last is a constant specifying the file type: currently only OBJ or GLTF
         for (int i = 0; i < MPark.size(); ++i) {
             std::string modelFile = "Models/park_00" + std::to_string(i + 1) + ".mgcg";
-            MPark[i].init(this, &VMesh, modelFile, MGCG);
+            MPark[i].init(this, &VOpaque, modelFile, MGCG);
         }
 
 		MPlane.init(this, &VMesh, "Models/plane_001.mgcg", MGCG);
         MArrow.init(this, &VMesh, "Models/arrow.obj", OBJ);
-        MBox.init(this, &VMesh, "Models/box_005.mgcg", MGCG);
+        MBox.init(this, &VOpaque, "Models/box_005.mgcg", MGCG);
 
         // MGround.init(this, &VMesh, "Models/ground.mgcg", MGCG);
         MGround.vertices = {{{-50, 0, -50}, {0, 1, 0}, {0, 0}},
@@ -197,7 +214,7 @@ class Game : public BaseProject {
                             {{ 50, 0, -50}, {0, 1, 0}, {0, 1}},
                             {{ 50, 0,  50}, {0, 1, 0}, {1, 1}}};
         MGround.indices = {0, 1, 2, 1, 3, 2};
-        MGround.initMesh(this, &VMesh);
+        MGround.initMesh(this, &VOpaque);
 
         float scoreHeight = Ar * SCORE_WIDTH; // to make score images square
 		MScore.vertices = {{SCORE_BOTTOM_LEFT, {0.0f, 0.0f}}, {{SCORE_BOTTOM_LEFT.x, SCORE_BOTTOM_LEFT.y + scoreHeight}, {0.0f, 1.0f}},
@@ -242,11 +259,12 @@ class Game : public BaseProject {
 	void pipelinesAndDescriptorSetsInit() {
 		// This creates a new pipeline (with the current surface), using its shaders
 		PMesh.create();
+        POpaque.create();
 		POverlay.create();
 
         for (auto &dsPark : DSPark) {
-            dsPark.init(this, &DSLMesh, {
-                {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+            dsPark.init(this, &DSLOpaque, {
+                {0, UNIFORM, sizeof(OpaqueUniformBlock), nullptr},
                 {1, TEXTURE, 0, &TCity}});
         }
 
@@ -258,12 +276,12 @@ class Game : public BaseProject {
                 {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
                 {1, TEXTURE, 0, &TArrow}
         });
-        DSBox.init(this, &DSLMesh, {
-                {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+        DSBox.init(this, &DSLOpaque, {
+                {0, UNIFORM, sizeof(OpaqueUniformBlock), nullptr},
                 {1, TEXTURE, 0, &TCity}
         });
-        DSGround.init(this, &DSLMesh, {
-                {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
+        DSGround.init(this, &DSLOpaque, {
+                {0, UNIFORM, sizeof(OpaqueUniformBlock), nullptr},
                 {1, TEXTURE, 0, &TGround}
         });
 		DSScore.init(this, &DSLOverlay, {
@@ -296,6 +314,7 @@ class Game : public BaseProject {
 	void pipelinesAndDescriptorSetsCleanup() {
 		// Cleanup pipelines
 		PMesh.cleanup();
+        POpaque.cleanup();
 		POverlay.cleanup();
 
 		// Cleanup datasets
@@ -347,12 +366,14 @@ class Game : public BaseProject {
 		
 		// Cleanup descriptor set layouts
 		DSLMesh.cleanup();
+        DSLOpaque.cleanup();
 		DSLOverlay.cleanup();
 
 		DSLGubo.cleanup();
 		
 		// Destroies the pipelines
-		PMesh.destroy();		
+		PMesh.destroy();
+        POpaque.destroy();
 		POverlay.destroy();
 	}
 	
@@ -363,15 +384,17 @@ class Game : public BaseProject {
 	void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 		// sets global uniforms (see below fro parameters explanation)
 		DSGubo.bind(commandBuffer, PMesh, 0, currentImage);
+        DSGubo.bind(commandBuffer, POpaque, 0, currentImage);
 
 		// binds the pipeline
 		PMesh.bind(commandBuffer);
+        POpaque.bind(commandBuffer);
 		// For a pipeline object, this command binds the corresponing pipeline to the command buffer passed in its parameter
 
 		// binds the model
         for (int i = 0; i < MPark.size(); ++i) {
             MPark[i].bind(commandBuffer);
-            DSPark[i].bind(commandBuffer, PMesh, 1, currentImage);
+            DSPark[i].bind(commandBuffer, POpaque, 1, currentImage);
             vkCmdDrawIndexed(commandBuffer,
                              static_cast<uint32_t>(MPark[i].indices.size()), 1, 0, 0, 0);
         }
@@ -387,12 +410,12 @@ class Game : public BaseProject {
                          static_cast<uint32_t>(MArrow.indices.size()), 1, 0, 0, 0);
 
         MBox.bind(commandBuffer);
-        DSBox.bind(commandBuffer, PMesh, 1, currentImage);
+        DSBox.bind(commandBuffer, POpaque, 1, currentImage);
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MBox.indices.size()), 1, 0, 0, 0);
 
         MGround.bind(commandBuffer);
-        DSGround.bind(commandBuffer, PMesh, 1, currentImage);
+        DSGround.bind(commandBuffer, POpaque, 1, currentImage);
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MGround.indices.size()), 1, 0, 0, 0);
 
@@ -474,7 +497,7 @@ class Game : public BaseProject {
         static glm::mat4 parkWorldMat = glm::mat4(1);
         for (int i = 0; i < uboPark.size(); ++i) {
             parkWorldMat = glm::translate(glm::mat4(1), parkTranslations[i]);
-            uboPark[i].amb = 1.0f; uboPark[i].gamma = 180.0f; uboPark[i].sColor = glm::vec3(1.0f);
+            uboPark[i].amb = 1.0f; uboPark[i].sigma = 1.1;
             uboPark[i].mvpMat = projMat * viewMat * parkWorldMat;
             uboPark[i].mMat = parkWorldMat;
             uboPark[i].nMat = glm::inverse(glm::transpose(parkWorldMat));
@@ -500,7 +523,7 @@ class Game : public BaseProject {
         DSArrow.map(currentImage, &uboArrow, sizeof(uboArrow), 0);
 
         glm::mat4 boxWorldMat = box->computeWorldMatrix();
-        uboBox.amb = 1.0f; uboBox.gamma = 180.0f; uboBox.sColor = glm::vec3(1.0f);
+        uboBox.amb = 1.0f; uboBox.sigma = 1.1;
         uboBox.mvpMat = projMat * viewMat * boxWorldMat;
         uboBox.mMat = boxWorldMat;
         uboBox.nMat = glm::inverse(glm::transpose(boxWorldMat));
@@ -508,7 +531,7 @@ class Game : public BaseProject {
 
         static glm::mat4 groundWorldMat = glm::mat4(1);
         /* high gamma makes the ground less shiny and sColor specular reflection color is set to dark green */
-        uboGround.amb = 1.0f; uboGround.gamma = 1440.0f; uboGround.sColor = {0.0, 0.20, 0.0};
+        uboGround.amb = 1.0f; uboGround.sigma = 1.1;
         uboGround.mvpMat = projMat * viewMat * groundWorldMat;
         uboGround.mMat = groundWorldMat;
         uboGround.nMat = glm::inverse(glm::transpose(groundWorldMat));

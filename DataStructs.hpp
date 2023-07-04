@@ -24,6 +24,14 @@ struct MeshUniformBlock {
     alignas(16) glm::mat4 nMat;
 };
 
+struct OpaqueUniformBlock {
+    alignas(4) float amb;
+    alignas(4) float sigma;
+    alignas(16) glm::mat4 mvpMat;
+    alignas(16) glm::mat4 mMat;
+    alignas(16) glm::mat4 nMat;
+};
+
 struct OverlayUniformBlock {
     alignas(4) float visible; // applies to all instances
     alignas(16) glm::mat4 mvpMat;
@@ -40,6 +48,12 @@ struct GlobalUniformBlock {
 
 // The vertices data structures
 struct VertexMesh {
+    glm::vec3 pos;
+    glm::vec3 norm;
+    glm::vec2 UV;
+};
+
+struct VertexOpaque {
     glm::vec3 pos;
     glm::vec3 norm;
     glm::vec2 UV;
