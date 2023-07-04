@@ -380,14 +380,31 @@ class Game : public BaseProject {
 	// Here it is the creation of the command buffer:
 	// You send to the GPU all the objects you want to draw,
 	// with their buffers and textures
-	
+	/**
+	 * CAREFUL: ORDER OF CALLS MATTERS!
+	 * for each pipeline you have to gubo.bind(pipeline1), pipeline1.bind(), model1.bind(), ds1.bind(pipeline1), model2.bind(), ds2.bind(pipeline1)...
+	 * without mixing pipeline order (e.g. WRONG gubo.bind(pipeline1), gubo.bind(pipeline2), pipeline1.bind(), pipeline2.bind())
+	 */
 	void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 		// sets global uniforms (see below fro parameters explanation)
 		DSGubo.bind(commandBuffer, PMesh, 0, currentImage);
+
+        PMesh.bind(commandBuffer);
+
+        MPlane.bind(commandBuffer);
+        DSPlane.bind(commandBuffer, PMesh, 1, currentImage);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MPlane.indices.size()), 1, 0, 0, 0);
+
+        MArrow.bind(commandBuffer);
+        DSArrow.bind(commandBuffer, PMesh, 1, currentImage);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MArrow.indices.size()), 1, 0, 0, 0);
+
+
         DSGubo.bind(commandBuffer, POpaque, 0, currentImage);
 
 		// binds the pipeline
-		PMesh.bind(commandBuffer);
         POpaque.bind(commandBuffer);
 		// For a pipeline object, this command binds the corresponing pipeline to the command buffer passed in its parameter
 
@@ -398,16 +415,6 @@ class Game : public BaseProject {
             vkCmdDrawIndexed(commandBuffer,
                              static_cast<uint32_t>(MPark[i].indices.size()), 1, 0, 0, 0);
         }
-
-        MPlane.bind(commandBuffer);
-		DSPlane.bind(commandBuffer, PMesh, 1, currentImage);
-		vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(MPlane.indices.size()), 1, 0, 0, 0);
-
-        MArrow.bind(commandBuffer);
-        DSArrow.bind(commandBuffer, PMesh, 1, currentImage);
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(MArrow.indices.size()), 1, 0, 0, 0);
 
         MBox.bind(commandBuffer);
         DSBox.bind(commandBuffer, POpaque, 1, currentImage);
