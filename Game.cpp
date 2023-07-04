@@ -507,7 +507,8 @@ class Game : public BaseProject {
         DSBox.map(currentImage, &uboBox, sizeof(uboBox), 0);
 
         static glm::mat4 groundWorldMat = glm::mat4(1);
-        uboGround.amb = 1.0f; uboGround.gamma = 180.0f; uboGround.sColor = glm::vec3(1.0f);
+        /* high gamma makes the ground less shiny and sColor specular reflection color is set to dark green */
+        uboGround.amb = 1.0f; uboGround.gamma = 1440.0f; uboGround.sColor = {0.0, 0.20, 0.0};
         uboGround.mvpMat = projMat * viewMat * groundWorldMat;
         uboGround.mMat = groundWorldMat;
         uboGround.nMat = glm::inverse(glm::transpose(groundWorldMat));
