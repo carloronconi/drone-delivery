@@ -626,6 +626,7 @@ class Game : public BaseProject {
         const float camPitch = 0.5;
 
         static auto posDamper = Damper<vec3>(10);
+        if (userInputs.handleR) return posDamper.damp({0, 3, 0}, userInputs.deltaT);
 
         vec3 posNew =
                 world
