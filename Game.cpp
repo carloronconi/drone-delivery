@@ -210,9 +210,9 @@ class Game : public BaseProject {
 
         // MGround.init(this, &VMesh, "Models/ground.mgcg", MGCG);
         MGround.vertices = {{{-50, 0, -50}, {0, 1, 0}, {0, 0}},
-                            {{-50, 0,  50}, {0, 1, 0}, {1, 0}},
-                            {{ 50, 0, -50}, {0, 1, 0}, {0, 1}},
-                            {{ 50, 0,  50}, {0, 1, 0}, {1, 1}}};
+                            {{-50, 0,  50}, {0, 1, 0}, {10, 0}},
+                            {{ 50, 0, -50}, {0, 1, 0}, {0, 10}},
+                            {{ 50, 0,  50}, {0, 1, 0}, {10, 10}}}; // give UVs values >1 to repeat the texture
         MGround.indices = {0, 1, 2, 1, 3, 2};
         MGround.initMesh(this, &VOpaque);
 
