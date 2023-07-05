@@ -503,7 +503,7 @@ class Game : public BaseProject {
 
         gubo.DlightDir = glm::normalize(glm::vec3(1, 2, 3));
         gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-        gubo.AmbLightColor = glm::vec3(0.1f);
+        gubo.AmbLightColor = glm::vec3(0.9f);
         gubo.eyePos = camPos;
         gubo.usePointLight = (userInputs.handleQ)? 1.0 : 0.0;
         // Writes value to the GPU
