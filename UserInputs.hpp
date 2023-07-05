@@ -9,6 +9,8 @@
 #include "DataStructs.hpp"
 
 struct UserInputs {
+    static const int BOUNCE_WAIT = 3;   // frames required for button debounce to avoid taking as double-click a single
+                                        // long click of a bouncing button (e.g. R)
     float deltaT;
     glm::vec3 m; // {DA, RF, WS} e.g. F = (m.y == -1)
     glm::vec3 r; // {DownUp, RightLeft, QE}
@@ -31,12 +33,17 @@ public:
         wasFire = fire;
 
         static bool shouldHandleR;
-        if (!shouldHandleR && m.y == 1) {
+        static int bounceWaitR = BOUNCE_WAIT;
+        if (!shouldHandleR && m.y == 1 && bounceWaitR == 0) {
             shouldHandleR = true;
+            bounceWaitR = BOUNCE_WAIT;
         }
-        else if (shouldHandleR && m.y == 1) {
+        else if (shouldHandleR && m.y == 1 && bounceWaitR == 0) {
             shouldHandleR = false;
+            bounceWaitR = BOUNCE_WAIT;
         }
+        else if (bounceWaitR > 0 && m.y != 1 && m.y != -1) bounceWaitR--;
+        std::cout << "bounce wait R: " << bounceWaitR << " m.y: " << m.y << "\n";
         handleR = shouldHandleR;
     }
 };
