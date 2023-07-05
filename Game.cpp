@@ -28,17 +28,17 @@ class Game : public BaseProject {
 	Model<VertexMesh> MPlane, MArrow; /** one per model **/
 	Model<VertexOpaque> MBox, MGround;
 	std::array<Model<VertexOpaque>, 4> MPark;
-	Model<VertexOverlay> MScore, MLife, MSplash, MWin, MLose;
-	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSScore, DSLife, DSSplash, DSWin, DSLose, DSGround; /** one per instance of model **/
+	Model<VertexOverlay> MScore, MLife, MSplash, MWin, MLose, MHelp;
+	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSScore, DSLife, DSSplash, DSWin, DSLose, DSGround, DSHelp; /** one per instance of model **/
 	std::array<DescriptorSet, 4> DSPark;
-	Texture TCity, TArrow, TGround, TScore, TLife, TSplash, TWin, TLose;
+	Texture TCity, TArrow, TGround, TScore, TLife, TSplash, TWin, TLose, THelp;
 	
 	// C++ storage for uniform variables
 	MeshUniformBlock uboPlane, uboArrow;
     OpaqueUniformBlock uboBox, uboGround;
     std::array<OpaqueUniformBlock, 4> uboPark;
 	GlobalUniformBlock gubo;
-	OverlayUniformBlock uboScore, uboLife, uboSplash, uboWin, uboLose;
+	OverlayUniformBlock uboScore, uboLife, uboSplash, uboWin, uboLose, uboHelp;
 
 	GameState gameState = SPLASH;
     glm::vec3 targetPos;
@@ -73,9 +73,9 @@ class Game : public BaseProject {
 		initialBackgroundColor = {0.0f, 0.06f, 0.4f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 14;
-		texturesInPool = 13;
-		setsInPool = 14;
+		uniformBlocksInPool = 15;
+		texturesInPool = 14;
+		setsInPool = 15;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 	}
@@ -240,6 +240,10 @@ class Game : public BaseProject {
         MLose.vertices = MSplash.vertices;
         MLose.indices = MSplash.indices;
         MLose.initMesh(this, &VOverlay);
+
+        MHelp.vertices = MSplash.vertices;
+        MHelp.indices = MSplash.indices;
+        MHelp.initMesh(this, &VOverlay);
 		
 		// Create the textures
 		// The second parameter is the file name
@@ -251,6 +255,7 @@ class Game : public BaseProject {
 		TSplash.init(this, "textures/splash.png");
         TWin.init(this, "textures/win.png");
         TLose.init(this, "textures/lose.png");
+        THelp.init(this, "textures/help.png");
 
 		initGameLogic();
 	}
@@ -304,6 +309,10 @@ class Game : public BaseProject {
                 {0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
                 {1, TEXTURE, 0, &TLose}
         });
+        DSHelp.init(this, &DSLOverlay, {
+                {0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
+                {1, TEXTURE, 0, &THelp}
+        });
 		DSGubo.init(this, &DSLGubo, {
 					{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
 				});
@@ -332,6 +341,7 @@ class Game : public BaseProject {
         DSWin.cleanup();
         DSLose.cleanup();
 		DSGubo.cleanup();
+        DSHelp.cleanup();
 	}
 
 	// Here you destroy all the Models, Texture and Desc. Set Layouts you created!
@@ -348,6 +358,7 @@ class Game : public BaseProject {
 		TSplash.cleanup();
         TWin.cleanup();
         TLose.cleanup();
+        THelp.cleanup();
 		
 		// Cleanup models
         for (auto &mPark : MPark) {
@@ -359,10 +370,11 @@ class Game : public BaseProject {
         MArrow.cleanup();
         MGround.cleanup();
 		MScore.cleanup();
-        TLife.cleanup();
+        MLife.cleanup();
 		MSplash.cleanup();
         MWin.cleanup();
         MLose.cleanup();
+        MHelp.cleanup();
 		
 		// Cleanup descriptor set layouts
 		DSLMesh.cleanup();
@@ -446,6 +458,10 @@ class Game : public BaseProject {
         DSLose.bind(commandBuffer, POverlay, 0, currentImage);
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MLose.indices.size()), 1, 0, 0, 0);
+        MHelp.bind(commandBuffer);
+        DSHelp.bind(commandBuffer, POverlay, 0, currentImage);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MHelp.indices.size()), 1, 0, 0, 0);
 	}
 
     void updateSplashUniformBuffer(uint32_t currentImage, UserInputs& userInputs) {
@@ -555,6 +571,11 @@ class Game : public BaseProject {
         uboLife.offset = {SCORE_OFFSET, 0}; /** offset between identical instances **/
         uboLife.instancesToDraw = static_cast<float>(lives);
         DSLife.map(currentImage, &uboLife, sizeof(uboLife), 0);
+
+        uboHelp.visible = (gameState == 1) ? 1.0f : 0.0f;
+        uboHelp.mvpMat = glm::mat4(1);
+        uboHelp.instancesToDraw = 1.0;
+        DSHelp.map(currentImage, &uboHelp, sizeof(uboHelp), 0);
     }
 
     void updateWinUniformBuffer(uint32_t currentImage, UserInputs& userInputs) {
