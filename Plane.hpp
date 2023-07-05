@@ -60,7 +60,7 @@ public:
     // e.g. gravity plus x-wind would be (2.5, -9.81, 0)
     constexpr static const vec3 EXTERNAL_ACCELERATIONS{0, -9.81, 0};
     // collision constants
-    constexpr static const float GROUND_COLLISION_ROT = 0.3;
+    constexpr static const float GROUND_COLLISION_ROT = 1.0f;
     constexpr static const float COLLISION_DISTANCE = 1.0f;
     constexpr static const vec3 MESH_COLLISION_BOUNCE = {-0.9, -1.1, -0.9};
     constexpr static const int SUCCESSIVE_MESH_COLLISIONS = 3;
@@ -144,10 +144,10 @@ private:
 
                 // careful: euler angles returned by quaternion always keep yaw (y) in [0, 90] and compensate with other two
                 // damping helps because it applies inputs slowly (can't just rotation = {1, 0, 0, 0}; because it wouldn't allow pitch to take off)
-                vec3 euler = eulerAngles(rotation);
-                rotation *= rotate(quat(1,0,0,0), rollDamper.damp(euler.x * GROUND_COLLISION_ROT, inputs->deltaT), vec3(- 1, 0, 0))
-                            * rotate(quat(1,0,0,0), pitchDamper.damp(euler.z * GROUND_COLLISION_ROT, inputs->deltaT), vec3(0, 0, - 1));
-
+                if (!prevCollisions.empty() && prevCollisions[0] != GROUND) {
+                    // only corrects when it's the first time hitting the ground: still occasionally has fast flipping
+                    rotation = {1, 0, 0, 0};
+                }
                 //cout << "COLLISION WITH GROUND DETECTED\n";
                 break;
             }
