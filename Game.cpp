@@ -188,6 +188,9 @@ class Game : public BaseProject {
 		// The last array, is a vector of pointer to the layouts of the sets that will
 		// be used in this pipeline. The first element will be set 0, and so on..
 		PMesh.init(this, &VMesh, "shaders/MeshVert.spv", "shaders/MeshFrag.spv", {&DSLGubo, &DSLMesh});
+        PMesh.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL,
+                                     VK_CULL_MODE_BACK_BIT, true);
+        // default advanced features: VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, false
         POpaque.init(this, &VOpaque, "shaders/OpaqueVert.spv", "shaders/OpaqueFrag.spv", {&DSLGubo, &DSLOpaque});
 		POverlay.init(this, &VOverlay, "shaders/OverlayVert.spv", "shaders/OverlayFrag.spv", {&DSLOverlay});
 		POverlay.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
@@ -205,7 +208,7 @@ class Game : public BaseProject {
         }
 
 		MPlane.init(this, &VMesh, "Models/plane_001.mgcg", MGCG);
-        MArrow.init(this, &VMesh, "Models/arrow.obj", OBJ);
+        MArrow.init(this, &VMesh, "Models/tube.obj", OBJ);
         MBox.init(this, &VOpaque, "Models/box_005.mgcg", MGCG);
 
         // MGround.init(this, &VMesh, "Models/ground.mgcg", MGCG);
@@ -248,7 +251,7 @@ class Game : public BaseProject {
 		// Create the textures
 		// The second parameter is the file name
 		TCity.init(this, "textures/Textures_City.png");
-        TArrow.init(this, "textures/arrow.png");
+        TArrow.init(this, "textures/tube.png");
         TGround.init(this, "textures/grass.jpg");
 		TScore.init(this, "textures/BoxScore.jpg");
         TLife.init(this, "textures/life.png");
@@ -539,7 +542,7 @@ class Game : public BaseProject {
             targetPos.z = static_cast<float>(rand() % RANGE + START);
             if (gameState == 1) score++;
         }
-        glm::mat4 arrowWorldMat = glm::translate(glm::mat4(1), glm::vec3(targetPos.x, 2.5, targetPos.z));
+        glm::mat4 arrowWorldMat = glm::translate(glm::mat4(1), glm::vec3(targetPos.x, -2, targetPos.z));
         uboArrow.amb = 1.0f; uboArrow.gamma = 180.0f; uboArrow.sColor = glm::vec3(1.0f);
         uboArrow.mvpMat = projMat * viewMat * arrowWorldMat;
         uboArrow.mMat = arrowWorldMat;
