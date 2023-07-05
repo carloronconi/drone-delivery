@@ -18,7 +18,7 @@ struct UserInputs {
     bool handleFire;
     bool handleNext;
     bool handleR;
-    bool handleF;
+    bool handleQ;
     GameState& gameState;
 
 public:
@@ -44,6 +44,19 @@ public:
         }
         else if (bounceWaitR > 0 && m.y != 1 && m.y != -1) bounceWaitR--;
         handleR = shouldHandleR;
+
+        static bool shouldHandleQ;
+        static int bounceWaitQ = BOUNCE_WAIT;
+        if (!shouldHandleQ && r.z == 1 && bounceWaitQ == 0) {
+            shouldHandleQ = true;
+            bounceWaitQ = BOUNCE_WAIT;
+        }
+        else if (shouldHandleQ && r.z == 1 && bounceWaitQ == 0) {
+            shouldHandleQ = false;
+            bounceWaitQ = BOUNCE_WAIT;
+        }
+        else if (bounceWaitQ > 0 && r.z != 1 && r.z != -1) bounceWaitQ--;
+        handleQ = shouldHandleQ;
     }
 };
 

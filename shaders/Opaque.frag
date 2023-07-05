@@ -12,6 +12,7 @@ layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
     vec3 DlightColor;	// color of the direct light
     vec3 AmbLightColor;	// ambient light
     vec3 eyePos;		// position of the viewer
+    float usePointLight;
 } gubo;
 
 layout(set = 1, binding = 0) uniform UniformBufferObject {
@@ -73,11 +74,22 @@ vec3 BRDF(vec3 V, vec3 N, vec3 L, vec3 Md, float sigma) {
     return LightDir * (A + B * G * sin(alpha) * tan(beta));
 }
 
+const float beta = 2.0f;
+const float g = 1.5;
+const vec3 pointLightPos = vec3(-30.0, 75.0, -30.0);
+
+vec3 pointLightDir() {
+    return normalize(pointLightPos - fragPos);
+}
+
+vec3 pointLightColor() {
+    return gubo.DlightColor.rgb * pow((g / length(gubo.eyePos - fragPos)), beta);
+}
 
 void main() {
     // DIRECT LIGHT
-    vec3 lightDir = normalize(gubo.DlightDir); // AKA l
-    vec3 lightColor = gubo.DlightColor.rgb;
+    vec3 lightDir = (gubo.usePointLight == 1.0)? pointLightDir() : normalize(gubo.DlightDir); // AKA l
+    vec3 lightColor = (gubo.usePointLight == 1.0)? pointLightColor() : gubo.DlightColor.rgb;
 
     vec3 albedo = texture(tex, fragUV).rgb;
     // OREN-NAYAR
