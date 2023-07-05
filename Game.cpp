@@ -42,8 +42,9 @@ class Game : public BaseProject {
 
 	GameState gameState = SPLASH;
     glm::vec3 targetPos;
-    const int RANGE = 32;
-    const int START = -16;
+    // moving target random range: values that make it land inside ground
+    const int RANGE = 120; // target random position xz range
+    const int START = -60; // starting value
     std::vector<glm::vec3> collisionDetectionVertices;
     const std::array<glm::vec3, 4> parkTranslations = {
             glm::vec3(32, 0, 32),
@@ -212,10 +213,10 @@ class Game : public BaseProject {
         MBox.init(this, &VOpaque, "Models/box_005.mgcg", MGCG);
 
         // MGround.init(this, &VMesh, "Models/ground.mgcg", MGCG);
-        MGround.vertices = {{{-50, 0, -50}, {0, 1, 0}, {0, 0}},
-                            {{-50, 0,  50}, {0, 1, 0}, {10, 0}},
-                            {{ 50, 0, -50}, {0, 1, 0}, {0, 10}},
-                            {{ 50, 0,  50}, {0, 1, 0}, {10, 10}}}; // give UVs values >1 to repeat the texture
+        MGround.vertices = {{{-64, 0, -64}, {0, 1, 0}, {0, 0}},
+                            {{-64, 0,  64}, {0, 1, 0}, {10, 0}},
+                            {{ 64, 0, -64}, {0, 1, 0}, {0, 10}},
+                            {{ 64, 0,  64}, {0, 1, 0}, {10, 10}}}; // give UVs values >1 to repeat the texture
         MGround.indices = {0, 1, 2, 1, 3, 2};
         MGround.initMesh(this, &VOpaque);
 
