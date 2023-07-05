@@ -142,8 +142,11 @@ private:
                 position.y = 0;
                 speed.y = 0;
 
-                rotation *= rotate(quat(1,0,0,0), rotation.x * GROUND_COLLISION_ROT, vec3(- 1, 0, 0))
-                            * rotate(quat(1,0,0,0), rotation.z * GROUND_COLLISION_ROT, vec3(0, 0, - 1));
+                // careful: euler angles returned by quaternion always keep yaw (y) in [0, 90] and compensate with other two
+                // damping helps because it applies inputs slowly (can't just rotation = {1, 0, 0, 0}; because it wouldn't allow pitch to take off)
+                vec3 euler = eulerAngles(rotation);
+                rotation *= rotate(quat(1,0,0,0), rollDamper.damp(euler.x * GROUND_COLLISION_ROT, inputs->deltaT), vec3(- 1, 0, 0))
+                            * rotate(quat(1,0,0,0), pitchDamper.damp(euler.z * GROUND_COLLISION_ROT, inputs->deltaT), vec3(0, 0, - 1));
 
                 //cout << "COLLISION WITH GROUND DETECTED\n";
                 break;
