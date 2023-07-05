@@ -85,7 +85,7 @@ void main() {
     vec3 diffuseColor = albedo; // AKA mD - surface diffuse color
     vec3 eyeDir = normalize(gubo.eyePos - fragPos); // AKA V, v, omegaR
 
-    // AMBIENT LIGHTING
+    // STANDARD - AMBIENT LIGHTING
     vec3 mAmbient = albedo * ubo.amb;
     vec3 lAmbient = gubo.AmbLightColor;
     vec3 ambient = lAmbient * mAmbient;
