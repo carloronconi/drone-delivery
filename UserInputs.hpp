@@ -43,7 +43,6 @@ public:
             bounceWaitR = BOUNCE_WAIT;
         }
         else if (bounceWaitR > 0 && m.y != 1 && m.y != -1) bounceWaitR--;
-        std::cout << "bounce wait R: " << bounceWaitR << " m.y: " << m.y << "\n";
         handleR = shouldHandleR;
     }
 };
