@@ -10,8 +10,8 @@
 
 struct UserInputs {
     float deltaT;
-    glm::vec3 m;
-    glm::vec3 r;
+    glm::vec3 m; // {DA, RF, WS} e.g. F = (m.y == -1)
+    glm::vec3 r; // {DownUp, RightLeft, QE}
     bool fire = false;
     bool handleFire;
     bool handleNext;
