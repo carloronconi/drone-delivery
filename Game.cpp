@@ -18,7 +18,7 @@ class Game : public BaseProject {
 	DescriptorSetLayout DSLGubo, DSLMesh, DSLOpaque, DSLOverlay;
 
 	// Vertex formats
-	VertexDescriptor VMesh, VOpaque, VOverlay;
+	VertexDescriptor VClassic, VOverlay;
 
 	// Pipelines [Shader couples]
 	Pipeline PMesh, POpaque, POverlay;
@@ -140,7 +140,7 @@ class Game : public BaseProject {
 				});
 
 		// Vertex descriptors
-		VMesh.init(this, {
+		VClassic.init(this, {
 				  // this array contains the bindings
 				  // first  element : the binding number
 				  // second element : the stride of this binging
@@ -176,17 +176,6 @@ class Game : public BaseProject {
 				         sizeof(glm::vec2), UV}
 				});
 
-        VOpaque.init(this, {
-                {0, sizeof(VertexClassic), VK_VERTEX_INPUT_RATE_VERTEX}
-        }, {
-                           {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexClassic, pos),
-                                   sizeof(glm::vec3), POSITION},
-                           {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexClassic, norm),
-                                   sizeof(glm::vec3), NORMAL},
-                           {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexClassic, UV),
-                                   sizeof(glm::vec2), UV}
-                   });
-
 		VOverlay.init(this, {
 				  {0, sizeof(VertexOverlay), VK_VERTEX_INPUT_RATE_VERTEX}
 				}, {
@@ -201,11 +190,11 @@ class Game : public BaseProject {
 		// Third and fourth parameters are respectively the vertex and fragment shaders
 		// The last array, is a vector of pointer to the layouts of the sets that will
 		// be used in this pipeline. The first element will be set 0, and so on..
-		PMesh.init(this, &VMesh, "shaders/MeshVert.spv", "shaders/MeshFrag.spv", {&DSLGubo, &DSLMesh});
+		PMesh.init(this, &VClassic, "shaders/MeshVert.spv", "shaders/MeshFrag.spv", {&DSLGubo, &DSLMesh});
         PMesh.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL,
                                      VK_CULL_MODE_BACK_BIT, true);
         // default advanced features: VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, false
-        POpaque.init(this, &VOpaque, "shaders/OpaqueVert.spv", "shaders/OpaqueFrag.spv", {&DSLGubo, &DSLOpaque});
+        POpaque.init(this, &VClassic, "shaders/OpaqueVert.spv", "shaders/OpaqueFrag.spv", {&DSLGubo, &DSLOpaque});
         POpaque.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL,
                                   VK_CULL_MODE_NONE, false); /** ROAD TILES REQUIRE NO BACK-FACE CULLING **/
 		POverlay.init(this, &VOverlay, "shaders/OverlayVert.spv", "shaders/OverlayFrag.spv", {&DSLOverlay});
@@ -220,13 +209,13 @@ class Game : public BaseProject {
 		// The last is a constant specifying the file type: currently only OBJ or GLTF
         for (int i = 0; i < MCity.size(); ++i) {
             std::string modelFile = "Models/city_" + std::to_string(i) + ".mgcg";
-            MCity[i].init(this, &VOpaque, modelFile, MGCG);
+            MCity[i].init(this, &VClassic, modelFile, MGCG);
         }
 
-		MPlane.init(this, &VMesh, "Models/plane_001.mgcg", MGCG);
-        MArrow.init(this, &VMesh, "Models/tube.obj", OBJ);
-        MBox.init(this, &VOpaque, "Models/box_005.mgcg", MGCG);
-        MRoad.init(this, &VOpaque, "Models/road_0.mgcg", MGCG);
+		MPlane.init(this, &VClassic, "Models/plane_001.mgcg", MGCG);
+        MArrow.init(this, &VClassic, "Models/tube.obj", OBJ);
+        MBox.init(this, &VClassic, "Models/box_005.mgcg", MGCG);
+        MRoad.init(this, &VClassic, "Models/road_0.mgcg", MGCG);
 
         // MGround.init(this, &VMesh, "Models/ground.mgcg", MGCG);
         MGround.vertices = {{{-64, 0, -64}, {0, 1, 0}, {0, 0}},
@@ -234,7 +223,7 @@ class Game : public BaseProject {
                             {{ 64, 0, -64}, {0, 1, 0}, {0, 10}},
                             {{ 64, 0,  64}, {0, 1, 0}, {10, 10}}}; // give UVs values >1 to repeat the texture
         MGround.indices = {0, 1, 2, 1, 3, 2};
-        MGround.initMesh(this, &VOpaque);
+        MGround.initMesh(this, &VClassic);
 
         float scoreHeight = Ar * SCORE_WIDTH; // to make score images square
 		MScore.vertices = {{SCORE_BOTTOM_LEFT, {0.0f, 0.0f}}, {{SCORE_BOTTOM_LEFT.x, SCORE_BOTTOM_LEFT.y + scoreHeight}, {0.0f, 1.0f}},
