@@ -69,6 +69,7 @@ public:
 private:
     // state of the plane in world coordinates
     vec3 position;
+    vec3 initialPosition;
     quat rotation;
     mat4 lastWorldMatrix;
     vec3 speed{0, 0, 0};
@@ -234,6 +235,7 @@ public:
           const quat &initialRotation = quat(1, 0, 0, 0)) :
             wing(wing),
             position(initialPosition),
+            initialPosition(initialPosition),
             rotation(initialRotation),
             verticesToAvoid(collisionDetectionVertices) {}
 
@@ -293,7 +295,7 @@ public:
 
     void resetState() {
         speed = {0, 0, 0};
-        position = {0, 0, 0};
+        position = initialPosition;
         rotation = {1, 0, 0, 0};
     }
 

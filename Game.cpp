@@ -48,12 +48,12 @@ class Game : public BaseProject {
     std::vector<glm::vec3> collisionDetectionVertices;
 
     // city blocks parameters
-    const vec3 cityStartingPos = {-32, 0, -32};
-    const int cityOffset = 24;
+    const vec3 cityStartingPos = {-36, 0, -48}; // centers city in the square 120x120 map
+    const int cityOffset = 24; // distance between buildings
     const int cityDim = 3; // in our case 3x4 city so every 3 blocks jump to next row
 
     LogarithmicWing wingImplementation = LogarithmicWing(Plane::MAX_WING_LIFT, Plane::MAX_SPEED, Plane::BASE);
-    Plane* const plane = new Plane(wingImplementation, collisionDetectionVertices, {64, 0, 0});
+    Plane* const plane = new Plane(wingImplementation, collisionDetectionVertices, {48, 0, 0}); // starts in middle of long side offset to the side
     Package* const box = new Package(plane->getPositionInWorldCoordinates(), plane->getSpeedInWorldCoordinates(), targetPos);
     const float SCORE_OFFSET = 0.15;
     const glm::vec2 SCORE_BOTTOM_LEFT = {-0.9f, 0.8f};
