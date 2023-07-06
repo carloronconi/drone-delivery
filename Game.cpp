@@ -54,7 +54,7 @@ class Game : public BaseProject {
     const int cityDim = 3; // in our case 3x4 city so every 3 blocks jump to next row
 
     const int ROAD_INSTANCES = 6;
-    const vec3 ROAD_STARTING_POSITION = {48, 0.1, 48};
+    const vec3 ROAD_STARTING_POSITION = {48, 0.15, 48};
 
     LogarithmicWing wingImplementation = LogarithmicWing(Plane::MAX_WING_LIFT, Plane::MAX_SPEED, Plane::BASE);
     Plane* const plane = new Plane(wingImplementation, collisionDetectionVertices, {48, 0, 0}); // starts in middle of long side offset to the side
@@ -206,6 +206,8 @@ class Game : public BaseProject {
                                      VK_CULL_MODE_BACK_BIT, true);
         // default advanced features: VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, false
         POpaque.init(this, &VOpaque, "shaders/OpaqueVert.spv", "shaders/OpaqueFrag.spv", {&DSLGubo, &DSLOpaque});
+        POpaque.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL,
+                                  VK_CULL_MODE_NONE, false); /** ROAD TILES REQUIRE NO BACK-FACE CULLING **/
 		POverlay.init(this, &VOverlay, "shaders/OverlayVert.spv", "shaders/OverlayFrag.spv", {&DSLOverlay});
 		POverlay.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
  								    VK_CULL_MODE_NONE, true);
