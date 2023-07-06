@@ -1,5 +1,5 @@
-glslc Mesh.frag -o MeshFrag.spv
-glslc Mesh.vert -o MeshVert.spv
+glslc Metallic.frag -o MetallicFrag.spv
+glslc Metallic.vert -o MetallicVert.spv
 glslc Opaque.frag -o OpaqueFrag.spv
 glslc Opaque.vert -o OpaqueVert.spv
 glslc Overlay.frag -o OverlayFrag.spv

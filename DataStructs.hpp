@@ -15,7 +15,7 @@
 //        mat3  : alignas(16)
 //        mat4  : alignas(16)
 
-struct MeshUniformBlock {
+struct MetallicUniformBlock {
     alignas(4) float amb;
     alignas(4) float gamma;
     alignas(16) glm::vec3 sColor;

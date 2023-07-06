@@ -15,13 +15,13 @@ class Game : public BaseProject {
 	float Ar;
 
 	// Descriptor Layouts ["classes" of what will be passed to the shaders]
-	DescriptorSetLayout DSLGubo, DSLMesh, DSLOpaque, DSLOverlay;
+	DescriptorSetLayout DSLGubo, DSLMetallic, DSLOpaque, DSLOverlay;
 
 	// Vertex formats
 	VertexDescriptor VClassic, VOverlay;
 
 	// Pipelines [Shader couples]
-	Pipeline PMesh, POpaque, POverlay;
+	Pipeline PMetallic, POpaque, POverlay;
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
@@ -35,7 +35,7 @@ class Game : public BaseProject {
 	Texture TCity, TArrow, TGround, TScore, TLife, TSplash, TWin, TLose, THelp;
 	
 	// C++ storage for uniform variables
-	MeshUniformBlock uboPlane, uboArrow;
+	MetallicUniformBlock uboPlane, uboArrow;
     OpaqueUniformBlock uboBox, uboGround, uboRoad;
     OpaqueUniformBlock uboCity; /** use a single uniform block that gets translated before mapping **/
 	GlobalUniformBlock gubo;
@@ -115,7 +115,7 @@ class Game : public BaseProject {
 	// Here you also create your Descriptor set layouts and load the shaders for the pipelines
 	void localInit() {
 		// Descriptor Layouts [what will be passed to the shaders]
-		DSLMesh.init(this, {
+		DSLMetallic.init(this, {
 					// this array contains the bindings:
 					// first  element : the binding number
 					// second element : the type of element (buffer or texture)
@@ -190,9 +190,9 @@ class Game : public BaseProject {
 		// Third and fourth parameters are respectively the vertex and fragment shaders
 		// The last array, is a vector of pointer to the layouts of the sets that will
 		// be used in this pipeline. The first element will be set 0, and so on..
-		PMesh.init(this, &VClassic, "shaders/MeshVert.spv", "shaders/MeshFrag.spv", {&DSLGubo, &DSLMesh});
-        PMesh.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL,
-                                     VK_CULL_MODE_BACK_BIT, true);
+		PMetallic.init(this, &VClassic, "shaders/MetallicVert.spv", "shaders/MetallicFrag.spv", {&DSLGubo, &DSLMetallic});
+        PMetallic.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL,
+                                      VK_CULL_MODE_BACK_BIT, true);
         // default advanced features: VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, false
         POpaque.init(this, &VClassic, "shaders/OpaqueVert.spv", "shaders/OpaqueFrag.spv", {&DSLGubo, &DSLOpaque});
         POpaque.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL,
@@ -272,7 +272,7 @@ class Game : public BaseProject {
 	// Here you create your pipelines and Descriptor Sets!
 	void pipelinesAndDescriptorSetsInit() {
 		// This creates a new pipeline (with the current surface), using its shaders
-		PMesh.create();
+		PMetallic.create();
         POpaque.create();
 		POverlay.create();
 
@@ -282,13 +282,13 @@ class Game : public BaseProject {
                 {1, TEXTURE, 0, &TCity}});
         }
 
-		DSPlane.init(this, &DSLMesh, {
-					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TCity}
+		DSPlane.init(this, &DSLMetallic, {
+					{0, UNIFORM, sizeof(MetallicUniformBlock), nullptr},
+					{1, TEXTURE, 0,                            &TCity}
 				});
-        DSArrow.init(this, &DSLMesh, {
-                {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-                {1, TEXTURE, 0, &TArrow}
+        DSArrow.init(this, &DSLMetallic, {
+                {0, UNIFORM, sizeof(MetallicUniformBlock), nullptr},
+                {1, TEXTURE, 0,                            &TArrow}
         });
         DSBox.init(this, &DSLOpaque, {
                 {0, UNIFORM, sizeof(OpaqueUniformBlock), nullptr},
@@ -335,7 +335,7 @@ class Game : public BaseProject {
 	// All the object classes defined in Starter.hpp have a method .cleanup() for this purpose
 	void pipelinesAndDescriptorSetsCleanup() {
 		// Cleanup pipelines
-		PMesh.cleanup();
+		PMetallic.cleanup();
         POpaque.cleanup();
 		POverlay.cleanup();
 
@@ -392,14 +392,14 @@ class Game : public BaseProject {
         MHelp.cleanup();
 		
 		// Cleanup descriptor set layouts
-		DSLMesh.cleanup();
+		DSLMetallic.cleanup();
         DSLOpaque.cleanup();
 		DSLOverlay.cleanup();
 
 		DSLGubo.cleanup();
 		
 		// Destroies the pipelines
-		PMesh.destroy();
+		PMetallic.destroy();
         POpaque.destroy();
 		POverlay.destroy();
 	}
@@ -414,17 +414,17 @@ class Game : public BaseProject {
 	 */
 	void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 		// sets global uniforms (see below fro parameters explanation)
-		DSGubo.bind(commandBuffer, PMesh, 0, currentImage);
+		DSGubo.bind(commandBuffer, PMetallic, 0, currentImage);
 
-        PMesh.bind(commandBuffer);
+        PMetallic.bind(commandBuffer);
 
         MPlane.bind(commandBuffer);
-        DSPlane.bind(commandBuffer, PMesh, 1, currentImage);
+        DSPlane.bind(commandBuffer, PMetallic, 1, currentImage);
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MPlane.indices.size()), 1, 0, 0, 0);
 
         MArrow.bind(commandBuffer);
-        DSArrow.bind(commandBuffer, PMesh, 1, currentImage);
+        DSArrow.bind(commandBuffer, PMetallic, 1, currentImage);
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MArrow.indices.size()), 1, 0, 0, 0);
 
