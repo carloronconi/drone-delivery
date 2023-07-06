@@ -56,8 +56,10 @@ class Game : public BaseProject {
     const int ROAD_INSTANCES = 6;
     const vec3 ROAD_STARTING_POSITION = {48, 0.15, 48};
 
+    const vec3 PLANE_STARTING_POS = {48, 0, 0}; // starts in middle of long side offset to the side
+
     LogarithmicWing wingImplementation = LogarithmicWing(Plane::MAX_WING_LIFT, Plane::MAX_SPEED, Plane::BASE);
-    Plane* const plane = new Plane(wingImplementation, collisionDetectionVertices, {48, 0, 0}); // starts in middle of long side offset to the side
+    Plane* const plane = new Plane(wingImplementation, collisionDetectionVertices, PLANE_STARTING_POS);
     Package* const box = new Package(plane->getPositionInWorldCoordinates(), plane->getSpeedInWorldCoordinates(), targetPos);
     const float SCORE_OFFSET = 0.15;
     const glm::vec2 SCORE_BOTTOM_LEFT = {-0.9f, 0.8f};
@@ -683,13 +685,13 @@ class Game : public BaseProject {
     * @param camPitch pitch in radians
     * @return camera position in world coordinates implementing damping
     */
-    static vec3 computeCameraPosition(const mat4& world, UserInputs& userInputs) {
+    vec3 computeCameraPosition(const mat4& world, UserInputs& userInputs) {
         const float camHeight = 0.25;
         const float camDistance = 25.0;
         const float camPitch = 0.5;
 
         static auto posDamper = Damper<vec3>(10);
-        if (userInputs.handleR) return posDamper.damp({0, 3, 0}, userInputs.deltaT);
+        if (userInputs.handleR) return posDamper.damp({PLANE_STARTING_POS.x, 3, PLANE_STARTING_POS.z}, userInputs.deltaT);
 
         vec3 posNew =
                 world
