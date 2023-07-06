@@ -15,29 +15,30 @@ class Game : public BaseProject {
 	float Ar;
 
 	// Descriptor Layouts ["classes" of what will be passed to the shaders]
-	DescriptorSetLayout DSLGubo, DSLMesh, DSLOpaque, DSLOverlay;
+	DescriptorSetLayout DSLGubo, DSLMetallic, DSLOpaque, DSLEmit, DSLOverlay;
 
 	// Vertex formats
-	VertexDescriptor VMesh, VOpaque, VOverlay;
+	VertexDescriptor VClassic, VOverlay;
 
 	// Pipelines [Shader couples]
-	Pipeline PMesh, POpaque, POverlay;
+	Pipeline PMetallic, POpaque, PEmit, POverlay;
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
-	Model<VertexMesh> MPlane, MArrow; /** one per model **/
-	Model<VertexOpaque> MBox, MGround;
-	std::array<Model<VertexOpaque>, 12> MCity;
-    Model<VertexOpaque> MRoad; /** uses instanced-rendering **/
+	Model<VertexClassic> MPlane, MArrow; /** one per model **/
+	Model<VertexClassic> MBox, MGround;
+	std::array<Model<VertexClassic>, 12> MCity;
+    Model<VertexClassic> MRoad; /** uses instanced-rendering **/
 	Model<VertexOverlay> MScore, MLife, MSplash, MWin, MLose, MHelp; /** score and life use instanced-rendering **/
 	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSScore, DSLife, DSSplash, DSWin, DSLose, DSGround, DSHelp, DSRoad; /** one per instance of model (if not using instanced-rendering)**/
 	std::array<DescriptorSet, 12> DSCity;
-	Texture TCity, TArrow, TGround, TScore, TLife, TSplash, TWin, TLose, THelp;
+	Texture TCity, TArrow, TGround, TScore, TLife, TSplash, TWin, TLose, THelp, TEmit;
 	
 	// C++ storage for uniform variables
-	MeshUniformBlock uboPlane, uboArrow;
-    OpaqueUniformBlock uboBox, uboGround, uboRoad;
+	MetallicUniformBlock uboPlane, uboArrow;
+    OpaqueUniformBlock uboBox, uboGround;
     OpaqueUniformBlock uboCity; /** use a single uniform block that gets translated before mapping **/
+    EmitUniformBlock uboRoad;
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboScore, uboLife, uboSplash, uboWin, uboLose, uboHelp;
 
@@ -89,7 +90,7 @@ class Game : public BaseProject {
 		
 		// Descriptor pool sizes
 		uniformBlocksInPool = 24;
-		texturesInPool = 23;
+		texturesInPool = 24;
 		setsInPool = 24;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
@@ -117,7 +118,7 @@ class Game : public BaseProject {
 	// Here you also create your Descriptor set layouts and load the shaders for the pipelines
 	void localInit() {
 		// Descriptor Layouts [what will be passed to the shaders]
-		DSLMesh.init(this, {
+		DSLMetallic.init(this, {
 					// this array contains the bindings:
 					// first  element : the binding number
 					// second element : the type of element (buffer or texture)
@@ -132,6 +133,12 @@ class Game : public BaseProject {
                 {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
                 {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
         });
+
+        DSLEmit.init(this, {
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
+                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT},
+                {2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT} // for emission texture sampler
+        });
 				
 		DSLOverlay.init(this, {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
@@ -142,13 +149,13 @@ class Game : public BaseProject {
 				});
 
 		// Vertex descriptors
-		VMesh.init(this, {
+		VClassic.init(this, {
 				  // this array contains the bindings
 				  // first  element : the binding number
 				  // second element : the stride of this binging
 				  // third  element : whether this parameter change per vertex or per instance
 				  //                  using the corresponding Vulkan constant
-				  {0, sizeof(VertexMesh), VK_VERTEX_INPUT_RATE_VERTEX}
+				  {0, sizeof(VertexClassic), VK_VERTEX_INPUT_RATE_VERTEX}
 				}, {
 				  // this array contains the location
 				  // first  element : the binding number
@@ -170,24 +177,13 @@ class Game : public BaseProject {
 				  //	in the "sizeof" in the previous array, refers to the correct one,
 				  //	if you have more than one vertex format!
 				  // ***************************************************
-				  {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexMesh, pos),
+				  {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexClassic, pos),
 				         sizeof(glm::vec3), POSITION},
-				  {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexMesh, norm),
+				  {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexClassic, norm),
 				         sizeof(glm::vec3), NORMAL},
-				  {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexMesh, UV),
+				  {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexClassic, UV),
 				         sizeof(glm::vec2), UV}
 				});
-
-        VOpaque.init(this, {
-                {0, sizeof(VertexOpaque), VK_VERTEX_INPUT_RATE_VERTEX}
-        }, {
-                           {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexOpaque, pos),
-                                   sizeof(glm::vec3), POSITION},
-                           {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexOpaque, norm),
-                                   sizeof(glm::vec3), NORMAL},
-                           {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexOpaque, UV),
-                                   sizeof(glm::vec2), UV}
-                   });
 
 		VOverlay.init(this, {
 				  {0, sizeof(VertexOverlay), VK_VERTEX_INPUT_RATE_VERTEX}
@@ -203,13 +199,14 @@ class Game : public BaseProject {
 		// Third and fourth parameters are respectively the vertex and fragment shaders
 		// The last array, is a vector of pointer to the layouts of the sets that will
 		// be used in this pipeline. The first element will be set 0, and so on..
-		PMesh.init(this, &VMesh, "shaders/MeshVert.spv", "shaders/MeshFrag.spv", {&DSLGubo, &DSLMesh});
-        PMesh.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL,
-                                     VK_CULL_MODE_BACK_BIT, true);
+		PMetallic.init(this, &VClassic, "shaders/MetallicVert.spv", "shaders/MetallicFrag.spv", {&DSLGubo, &DSLMetallic});
+        PMetallic.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL,
+                                      VK_CULL_MODE_BACK_BIT, true);
         // default advanced features: VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, false
-        POpaque.init(this, &VOpaque, "shaders/OpaqueVert.spv", "shaders/OpaqueFrag.spv", {&DSLGubo, &DSLOpaque});
-        POpaque.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL,
-                                  VK_CULL_MODE_NONE, false); /** ROAD TILES REQUIRE NO BACK-FACE CULLING **/
+        POpaque.init(this, &VClassic, "shaders/OpaqueVert.spv", "shaders/OpaqueFrag.spv", {&DSLGubo, &DSLOpaque});
+        PEmit.init(this, &VClassic, "shaders/EmitVert.spv", "shaders/EmitFrag.spv", {&DSLGubo, &DSLEmit});
+        PEmit.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL,
+                                    VK_CULL_MODE_NONE, false); /** ROAD TILES REQUIRE NO BACK-FACE CULLING **/
 		POverlay.init(this, &VOverlay, "shaders/OverlayVert.spv", "shaders/OverlayFrag.spv", {&DSLOverlay});
 		POverlay.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
  								    VK_CULL_MODE_NONE, true);
@@ -222,13 +219,13 @@ class Game : public BaseProject {
 		// The last is a constant specifying the file type: currently only OBJ or GLTF
         for (int i = 0; i < MCity.size(); ++i) {
             std::string modelFile = "Models/city_" + std::to_string(i) + ".mgcg";
-            MCity[i].init(this, &VOpaque, modelFile, MGCG);
+            MCity[i].init(this, &VClassic, modelFile, MGCG);
         }
 
-		MPlane.init(this, &VMesh, "Models/plane_001.mgcg", MGCG);
-        MArrow.init(this, &VMesh, "Models/tube.obj", OBJ);
-        MBox.init(this, &VOpaque, "Models/box_005.mgcg", MGCG);
-        MRoad.init(this, &VOpaque, "Models/road_0.mgcg", MGCG);
+		MPlane.init(this, &VClassic, "Models/plane_001.mgcg", MGCG);
+        MArrow.init(this, &VClassic, "Models/tube.obj", OBJ);
+        MBox.init(this, &VClassic, "Models/box_005.mgcg", MGCG);
+        MRoad.init(this, &VClassic, "Models/road_0.mgcg", MGCG);
 
         // MGround.init(this, &VMesh, "Models/ground.mgcg", MGCG);
         MGround.vertices = {{{-64, 0, -64}, {0, 1, 0}, {0, 0}},
@@ -236,7 +233,7 @@ class Game : public BaseProject {
                             {{ 64, 0, -64}, {0, 1, 0}, {0, 10}},
                             {{ 64, 0,  64}, {0, 1, 0}, {10, 10}}}; // give UVs values >1 to repeat the texture
         MGround.indices = {0, 1, 2, 1, 3, 2};
-        MGround.initMesh(this, &VOpaque);
+        MGround.initMesh(this, &VClassic);
 
         float scoreHeight = Ar * SCORE_WIDTH; // to make score images square
 		MScore.vertices = {{SCORE_BOTTOM_LEFT, {0.0f, 0.0f}}, {{SCORE_BOTTOM_LEFT.x, SCORE_BOTTOM_LEFT.y + scoreHeight}, {0.0f, 1.0f}},
@@ -278,6 +275,7 @@ class Game : public BaseProject {
         TWin.init(this, "textures/win.png");
         TLose.init(this, "textures/lose.png");
         THelp.init(this, "textures/help.png");
+        TEmit.init(this, "textures/city_emit.png");
 
 		initGameLogic();
 	}
@@ -285,8 +283,9 @@ class Game : public BaseProject {
 	// Here you create your pipelines and Descriptor Sets!
 	void pipelinesAndDescriptorSetsInit() {
 		// This creates a new pipeline (with the current surface), using its shaders
-		PMesh.create();
+		PMetallic.create();
         POpaque.create();
+        PEmit.create();
 		POverlay.create();
 
         for (auto &dsCity : DSCity) {
@@ -295,21 +294,22 @@ class Game : public BaseProject {
                 {1, TEXTURE, 0, &TCity}});
         }
 
-		DSPlane.init(this, &DSLMesh, {
-					{0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-					{1, TEXTURE, 0, &TCity}
+		DSPlane.init(this, &DSLMetallic, {
+					{0, UNIFORM, sizeof(MetallicUniformBlock), nullptr},
+					{1, TEXTURE, 0,                            &TCity}
 				});
-        DSArrow.init(this, &DSLMesh, {
-                {0, UNIFORM, sizeof(MeshUniformBlock), nullptr},
-                {1, TEXTURE, 0, &TArrow}
+        DSArrow.init(this, &DSLMetallic, {
+                {0, UNIFORM, sizeof(MetallicUniformBlock), nullptr},
+                {1, TEXTURE, 0,                            &TArrow}
         });
         DSBox.init(this, &DSLOpaque, {
                 {0, UNIFORM, sizeof(OpaqueUniformBlock), nullptr},
                 {1, TEXTURE, 0, &TCity}
         });
-        DSRoad.init(this, &DSLOpaque, {
+        DSRoad.init(this, &DSLEmit, {
                 {0, UNIFORM, sizeof(OpaqueUniformBlock), nullptr},
-                {1, TEXTURE, 0, &TCity}
+                {1, TEXTURE, 0, &TCity},
+                {2, TEXTURE, 0, &TEmit}
         });
         DSGround.init(this, &DSLOpaque, {
                 {0, UNIFORM, sizeof(OpaqueUniformBlock), nullptr},
@@ -348,8 +348,9 @@ class Game : public BaseProject {
 	// All the object classes defined in Starter.hpp have a method .cleanup() for this purpose
 	void pipelinesAndDescriptorSetsCleanup() {
 		// Cleanup pipelines
-		PMesh.cleanup();
+		PMetallic.cleanup();
         POpaque.cleanup();
+        PEmit.cleanup();
 		POverlay.cleanup();
 
 		// Cleanup datasets
@@ -386,6 +387,7 @@ class Game : public BaseProject {
         TWin.cleanup();
         TLose.cleanup();
         THelp.cleanup();
+        TEmit.cleanup();
 		
 		// Cleanup models
         for (auto &mCity : MCity) {
@@ -405,15 +407,17 @@ class Game : public BaseProject {
         MHelp.cleanup();
 		
 		// Cleanup descriptor set layouts
-		DSLMesh.cleanup();
+		DSLMetallic.cleanup();
         DSLOpaque.cleanup();
+        DSLEmit.cleanup();
 		DSLOverlay.cleanup();
 
 		DSLGubo.cleanup();
 		
 		// Destroies the pipelines
-		PMesh.destroy();
+		PMetallic.destroy();
         POpaque.destroy();
+        PEmit.destroy();
 		POverlay.destroy();
 	}
 	
@@ -427,17 +431,17 @@ class Game : public BaseProject {
 	 */
 	void populateCommandBuffer(VkCommandBuffer commandBuffer, int currentImage) {
 		// sets global uniforms (see below fro parameters explanation)
-		DSGubo.bind(commandBuffer, PMesh, 0, currentImage);
+		DSGubo.bind(commandBuffer, PMetallic, 0, currentImage);
 
-        PMesh.bind(commandBuffer);
+        PMetallic.bind(commandBuffer);
 
         MPlane.bind(commandBuffer);
-        DSPlane.bind(commandBuffer, PMesh, 1, currentImage);
+        DSPlane.bind(commandBuffer, PMetallic, 1, currentImage);
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MPlane.indices.size()), 1, 0, 0, 0);
 
         MArrow.bind(commandBuffer);
-        DSArrow.bind(commandBuffer, PMesh, 1, currentImage);
+        DSArrow.bind(commandBuffer, PMetallic, 1, currentImage);
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MArrow.indices.size()), 1, 0, 0, 0);
 
@@ -461,15 +465,19 @@ class Game : public BaseProject {
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MBox.indices.size()), 1, 0, 0, 0);
 
-        MRoad.bind(commandBuffer);
-        DSRoad.bind(commandBuffer, POpaque, 1, currentImage);
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(MRoad.indices.size()), ROAD_INSTANCES, 0, 0, 0);
-
         MGround.bind(commandBuffer);
         DSGround.bind(commandBuffer, POpaque, 1, currentImage);
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MGround.indices.size()), 1, 0, 0, 0);
+
+        DSGubo.bind(commandBuffer, PEmit, 0, currentImage);
+
+        PEmit.bind(commandBuffer);
+
+        MRoad.bind(commandBuffer);
+        DSRoad.bind(commandBuffer, PEmit, 1, currentImage);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MRoad.indices.size()), ROAD_INSTANCES, 0, 0, 0);
 
 		POverlay.bind(commandBuffer);
 		MScore.bind(commandBuffer);
@@ -594,6 +602,7 @@ class Game : public BaseProject {
         uboRoad.mvpMat = projMat * viewMat * roadWorldMat;
         uboRoad.mMat = roadWorldMat;
         uboRoad.nMat = glm::inverse(glm::transpose(roadWorldMat));
+        uboRoad.offset = {- 16.0f, 0.0f, 0.0f};
         DSRoad.map(currentImage, &uboRoad, sizeof(uboRoad), 0);
 
         static glm::mat4 groundWorldMat = glm::mat4(1);
