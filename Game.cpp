@@ -28,14 +28,15 @@ class Game : public BaseProject {
 	Model<VertexMesh> MPlane, MArrow; /** one per model **/
 	Model<VertexOpaque> MBox, MGround;
 	std::array<Model<VertexOpaque>, 12> MCity;
-	Model<VertexOverlay> MScore, MLife, MSplash, MWin, MLose, MHelp;
-	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSScore, DSLife, DSSplash, DSWin, DSLose, DSGround, DSHelp; /** one per instance of model **/
+    Model<VertexOpaque> MRoad; /** uses instanced-rendering **/
+	Model<VertexOverlay> MScore, MLife, MSplash, MWin, MLose, MHelp; /** score and life use instanced-rendering **/
+	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSScore, DSLife, DSSplash, DSWin, DSLose, DSGround, DSHelp, DSRoad; /** one per instance of model (if not using instanced-rendering)**/
 	std::array<DescriptorSet, 12> DSCity;
 	Texture TCity, TArrow, TGround, TScore, TLife, TSplash, TWin, TLose, THelp;
 	
 	// C++ storage for uniform variables
 	MeshUniformBlock uboPlane, uboArrow;
-    OpaqueUniformBlock uboBox, uboGround;
+    OpaqueUniformBlock uboBox, uboGround, uboRoad;
     OpaqueUniformBlock uboCity; /** use a single uniform block that gets translated before mapping **/
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboScore, uboLife, uboSplash, uboWin, uboLose, uboHelp;
@@ -51,6 +52,9 @@ class Game : public BaseProject {
     const vec3 cityStartingPos = {-36, 0, -48}; // centers city in the square 120x120 map
     const int cityOffset = 24; // distance between buildings
     const int cityDim = 3; // in our case 3x4 city so every 3 blocks jump to next row
+
+    const int ROAD_INSTANCES = 6;
+    const vec3 ROAD_STARTING_POSITION = {48, 0.1, 48};
 
     LogarithmicWing wingImplementation = LogarithmicWing(Plane::MAX_WING_LIFT, Plane::MAX_SPEED, Plane::BASE);
     Plane* const plane = new Plane(wingImplementation, collisionDetectionVertices, {48, 0, 0}); // starts in middle of long side offset to the side
@@ -82,9 +86,9 @@ class Game : public BaseProject {
 		initialBackgroundColor = {0.0f, 0.06f, 0.4f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 23;
-		texturesInPool = 22;
-		setsInPool = 23;
+		uniformBlocksInPool = 24;
+		texturesInPool = 23;
+		setsInPool = 24;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 	}
@@ -220,6 +224,7 @@ class Game : public BaseProject {
 		MPlane.init(this, &VMesh, "Models/plane_001.mgcg", MGCG);
         MArrow.init(this, &VMesh, "Models/tube.obj", OBJ);
         MBox.init(this, &VOpaque, "Models/box_005.mgcg", MGCG);
+        MRoad.init(this, &VOpaque, "Models/road_0.mgcg", MGCG);
 
         // MGround.init(this, &VMesh, "Models/ground.mgcg", MGCG);
         MGround.vertices = {{{-64, 0, -64}, {0, 1, 0}, {0, 0}},
@@ -298,6 +303,10 @@ class Game : public BaseProject {
                 {0, UNIFORM, sizeof(OpaqueUniformBlock), nullptr},
                 {1, TEXTURE, 0, &TCity}
         });
+        DSRoad.init(this, &DSLOpaque, {
+                {0, UNIFORM, sizeof(OpaqueUniformBlock), nullptr},
+                {1, TEXTURE, 0, &TCity}
+        });
         DSGround.init(this, &DSLOpaque, {
                 {0, UNIFORM, sizeof(OpaqueUniformBlock), nullptr},
                 {1, TEXTURE, 0, &TGround}
@@ -346,6 +355,7 @@ class Game : public BaseProject {
 
 		DSPlane.cleanup();
         DSBox.cleanup();
+        DSRoad.cleanup();
         DSArrow.cleanup();
         DSGround.cleanup();
 		DSScore.cleanup();
@@ -380,6 +390,7 @@ class Game : public BaseProject {
 
 		MPlane.cleanup();
         MBox.cleanup();
+        MRoad.cleanup();
         MArrow.cleanup();
         MGround.cleanup();
 		MScore.cleanup();
@@ -445,6 +456,11 @@ class Game : public BaseProject {
         DSBox.bind(commandBuffer, POpaque, 1, currentImage);
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MBox.indices.size()), 1, 0, 0, 0);
+
+        MRoad.bind(commandBuffer);
+        DSRoad.bind(commandBuffer, POpaque, 1, currentImage);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MRoad.indices.size()), ROAD_INSTANCES, 0, 0, 0);
 
         MGround.bind(commandBuffer);
         DSGround.bind(commandBuffer, POpaque, 1, currentImage);
@@ -566,6 +582,15 @@ class Game : public BaseProject {
         uboBox.mMat = boxWorldMat;
         uboBox.nMat = glm::inverse(glm::transpose(boxWorldMat));
         DSBox.map(currentImage, &uboBox, sizeof(uboBox), 0);
+
+        mat4 roadWorldMat =
+                glm::rotate(mat4(1.0f), glm::radians(90.0f), vec3(0,1,0))
+                * translate(mat4(1), ROAD_STARTING_POSITION);
+        uboRoad.amb = 1.0f; uboRoad.sigma = 1.1;
+        uboRoad.mvpMat = projMat * viewMat * roadWorldMat;
+        uboRoad.mMat = roadWorldMat;
+        uboRoad.nMat = glm::inverse(glm::transpose(roadWorldMat));
+        DSRoad.map(currentImage, &uboRoad, sizeof(uboRoad), 0);
 
         static glm::mat4 groundWorldMat = glm::mat4(1);
         /* high gamma makes the ground less shiny and sColor specular reflection color is set to dark green */
