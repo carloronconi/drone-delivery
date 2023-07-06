@@ -76,7 +76,7 @@ class Game : public BaseProject {
      * @param index of the model for which to compute the translation
      */
     vec3 computeCityTranslation(int index) {
-        return cityStartingPos + vec3{(index % cityDim) * cityOffset, 0, (index * cityOffset) / cityDim};
+        return cityStartingPos + vec3{(index % cityDim) * cityOffset, 0, (index / cityDim) * cityOffset};
     }
 
 	// Here you set the main application parameters
