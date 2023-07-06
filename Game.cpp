@@ -27,16 +27,16 @@ class Game : public BaseProject {
 	// Please note that Model objects depends on the corresponding vertex structure
 	Model<VertexMesh> MPlane, MArrow; /** one per model **/
 	Model<VertexOpaque> MBox, MGround;
-	std::array<Model<VertexOpaque>, 4> MPark;
+	std::array<Model<VertexOpaque>, 12> MCity;
 	Model<VertexOverlay> MScore, MLife, MSplash, MWin, MLose, MHelp;
 	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSScore, DSLife, DSSplash, DSWin, DSLose, DSGround, DSHelp; /** one per instance of model **/
-	std::array<DescriptorSet, 4> DSPark;
+	std::array<DescriptorSet, 12> DSCity;
 	Texture TCity, TArrow, TGround, TScore, TLife, TSplash, TWin, TLose, THelp;
 	
 	// C++ storage for uniform variables
 	MeshUniformBlock uboPlane, uboArrow;
     OpaqueUniformBlock uboBox, uboGround;
-    std::array<OpaqueUniformBlock, 4> uboPark;
+    OpaqueUniformBlock uboCity; /** use a single uniform block that gets translated before mapping **/
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboScore, uboLife, uboSplash, uboWin, uboLose, uboHelp;
 
@@ -46,14 +46,14 @@ class Game : public BaseProject {
     const int RANGE = 120; // target random position xz range
     const int START = -60; // starting value
     std::vector<glm::vec3> collisionDetectionVertices;
-    const std::array<glm::vec3, 4> parkTranslations = {
-            glm::vec3(32, 0, 32),
-            glm::vec3(16, 0, -16),
-            glm::vec3(-16, 0, 16),
-            glm::vec3(-16, 0, -16)};
+
+    // city blocks parameters
+    const vec3 cityStartingPos = {-32, 0, -32};
+    const int cityOffset = 24;
+    const int cityDim = 3; // in our case 3x4 city so every 3 blocks jump to next row
 
     LogarithmicWing wingImplementation = LogarithmicWing(Plane::MAX_WING_LIFT, Plane::MAX_SPEED, Plane::BASE);
-    Plane* const plane = new Plane(wingImplementation, collisionDetectionVertices);
+    Plane* const plane = new Plane(wingImplementation, collisionDetectionVertices, {64, 0, 0});
     Package* const box = new Package(plane->getPositionInWorldCoordinates(), plane->getSpeedInWorldCoordinates(), targetPos);
     const float SCORE_OFFSET = 0.15;
     const glm::vec2 SCORE_BOTTOM_LEFT = {-0.9f, 0.8f};
@@ -63,6 +63,14 @@ class Game : public BaseProject {
     const int STARTING_LIVES = 3;
     int score = 0;
     int lives = STARTING_LIVES;
+
+    /**
+     * computes the translation vector for a given model among the city models
+     * @param index of the model for which to compute the translation
+     */
+    vec3 computeCityTranslation(int index) {
+        return cityStartingPos + vec3{(index % cityDim) * cityOffset, 0, (index * cityOffset) / cityDim};
+    }
 
 	// Here you set the main application parameters
 	void setWindowParameters() {
@@ -74,9 +82,9 @@ class Game : public BaseProject {
 		initialBackgroundColor = {0.0f, 0.06f, 0.4f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 15;
-		texturesInPool = 14;
-		setsInPool = 15;
+		uniformBlocksInPool = 23;
+		texturesInPool = 22;
+		setsInPool = 23;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 	}
@@ -91,9 +99,10 @@ class Game : public BaseProject {
         targetPos.x = static_cast<float>(rand() % RANGE + START);
         targetPos.y = 0;
         targetPos.z = static_cast<float>(rand() % RANGE + START);
-        for (int i = 0; i < MPark.size(); ++i) {
-            for (auto v : MPark[i].vertices) {
-                collisionDetectionVertices.push_back(v.pos + parkTranslations[i]);
+        for (int i = 0; i < MCity.size(); ++i) {
+            for (auto v : MCity[i].vertices) {
+                collisionDetectionVertices.push_back(
+                        v.pos + computeCityTranslation(i));
             }
         }
     }
@@ -203,9 +212,9 @@ class Game : public BaseProject {
 		// The second parameter is the pointer to the vertex definition for this model
 		// The third parameter is the file name
 		// The last is a constant specifying the file type: currently only OBJ or GLTF
-        for (int i = 0; i < MPark.size(); ++i) {
-            std::string modelFile = "Models/park_00" + std::to_string(i + 1) + ".mgcg";
-            MPark[i].init(this, &VOpaque, modelFile, MGCG);
+        for (int i = 0; i < MCity.size(); ++i) {
+            std::string modelFile = "Models/city_" + std::to_string(i) + ".mgcg";
+            MCity[i].init(this, &VOpaque, modelFile, MGCG);
         }
 
 		MPlane.init(this, &VMesh, "Models/plane_001.mgcg", MGCG);
@@ -271,8 +280,8 @@ class Game : public BaseProject {
         POpaque.create();
 		POverlay.create();
 
-        for (auto &dsPark : DSPark) {
-            dsPark.init(this, &DSLOpaque, {
+        for (auto &dsCity : DSCity) {
+            dsCity.init(this, &DSLOpaque, {
                 {0, UNIFORM, sizeof(OpaqueUniformBlock), nullptr},
                 {1, TEXTURE, 0, &TCity}});
         }
@@ -331,8 +340,8 @@ class Game : public BaseProject {
 		POverlay.cleanup();
 
 		// Cleanup datasets
-        for (auto &dsPark : DSPark) {
-            dsPark.cleanup();
+        for (auto &dsCity : DSCity) {
+            dsCity.cleanup();
         }
 
 		DSPlane.cleanup();
@@ -365,8 +374,8 @@ class Game : public BaseProject {
         THelp.cleanup();
 		
 		// Cleanup models
-        for (auto &mPark : MPark) {
-            mPark.cleanup();
+        for (auto &mCity : MCity) {
+            mCity.cleanup();
         }
 
 		MPlane.cleanup();
@@ -425,11 +434,11 @@ class Game : public BaseProject {
 		// For a pipeline object, this command binds the corresponing pipeline to the command buffer passed in its parameter
 
 		// binds the model
-        for (int i = 0; i < MPark.size(); ++i) {
-            MPark[i].bind(commandBuffer);
-            DSPark[i].bind(commandBuffer, POpaque, 1, currentImage);
+        for (int i = 0; i < MCity.size(); ++i) {
+            MCity[i].bind(commandBuffer);
+            DSCity[i].bind(commandBuffer, POpaque, 1, currentImage);
             vkCmdDrawIndexed(commandBuffer,
-                             static_cast<uint32_t>(MPark[i].indices.size()), 1, 0, 0, 0);
+                             static_cast<uint32_t>(MCity[i].indices.size()), 1, 0, 0, 0);
         }
 
         MBox.bind(commandBuffer);
@@ -522,14 +531,15 @@ class Game : public BaseProject {
          * has its own Model View Projection matrix (mvpMat), as you see below, and they all move using the World matrix
          */
 
-        static glm::mat4 parkWorldMat = glm::mat4(1);
-        for (int i = 0; i < uboPark.size(); ++i) {
-            parkWorldMat = glm::translate(glm::mat4(1), parkTranslations[i]);
-            uboPark[i].amb = 1.0f; uboPark[i].sigma = 1.1;
-            uboPark[i].mvpMat = projMat * viewMat * parkWorldMat;
-            uboPark[i].mMat = parkWorldMat;
-            uboPark[i].nMat = glm::inverse(glm::transpose(parkWorldMat));
-            DSPark[i].map(currentImage, &uboPark[i], sizeof(uboPark[i]), 0);
+        // v.pos + cityStartingPos + vec3{(i * cityOffset) % cityDim, 0, i * cityOffset / cityDim});
+        static mat4 cityWorldMat;
+        uboCity.amb = 1.0f; uboCity.sigma = 1.1;
+        for (int i = 0; i < MCity.size(); ++i) {
+            cityWorldMat = translate(mat4(1), computeCityTranslation(i));
+            uboCity.mvpMat = projMat * viewMat * cityWorldMat;
+            uboCity.mMat = cityWorldMat;
+            uboCity.nMat = glm::inverse(glm::transpose(cityWorldMat));
+            DSCity[i].map(currentImage, &uboCity, sizeof(uboCity), 0);
         }
 
         uboPlane.amb = 1.0f; uboPlane.gamma = 180.0f; uboPlane.sColor = glm::vec3(1.0f);
