@@ -48,13 +48,7 @@ struct GlobalUniformBlock {
 };
 
 // The vertices data structures
-struct VertexMesh {
-    glm::vec3 pos;
-    glm::vec3 norm;
-    glm::vec2 UV;
-};
-
-struct VertexOpaque {
+struct VertexClassic {
     glm::vec3 pos;
     glm::vec3 norm;
     glm::vec2 UV;

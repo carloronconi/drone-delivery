@@ -25,10 +25,10 @@ class Game : public BaseProject {
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
-	Model<VertexMesh> MPlane, MArrow; /** one per model **/
-	Model<VertexOpaque> MBox, MGround;
-	std::array<Model<VertexOpaque>, 12> MCity;
-    Model<VertexOpaque> MRoad; /** uses instanced-rendering **/
+	Model<VertexClassic> MPlane, MArrow; /** one per model **/
+	Model<VertexClassic> MBox, MGround;
+	std::array<Model<VertexClassic>, 12> MCity;
+    Model<VertexClassic> MRoad; /** uses instanced-rendering **/
 	Model<VertexOverlay> MScore, MLife, MSplash, MWin, MLose, MHelp; /** score and life use instanced-rendering **/
 	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSScore, DSLife, DSSplash, DSWin, DSLose, DSGround, DSHelp, DSRoad; /** one per instance of model (if not using instanced-rendering)**/
 	std::array<DescriptorSet, 12> DSCity;
@@ -146,7 +146,7 @@ class Game : public BaseProject {
 				  // second element : the stride of this binging
 				  // third  element : whether this parameter change per vertex or per instance
 				  //                  using the corresponding Vulkan constant
-				  {0, sizeof(VertexMesh), VK_VERTEX_INPUT_RATE_VERTEX}
+				  {0, sizeof(VertexClassic), VK_VERTEX_INPUT_RATE_VERTEX}
 				}, {
 				  // this array contains the location
 				  // first  element : the binding number
@@ -168,22 +168,22 @@ class Game : public BaseProject {
 				  //	in the "sizeof" in the previous array, refers to the correct one,
 				  //	if you have more than one vertex format!
 				  // ***************************************************
-				  {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexMesh, pos),
+				  {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexClassic, pos),
 				         sizeof(glm::vec3), POSITION},
-				  {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexMesh, norm),
+				  {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexClassic, norm),
 				         sizeof(glm::vec3), NORMAL},
-				  {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexMesh, UV),
+				  {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexClassic, UV),
 				         sizeof(glm::vec2), UV}
 				});
 
         VOpaque.init(this, {
-                {0, sizeof(VertexOpaque), VK_VERTEX_INPUT_RATE_VERTEX}
+                {0, sizeof(VertexClassic), VK_VERTEX_INPUT_RATE_VERTEX}
         }, {
-                           {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexOpaque, pos),
+                           {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexClassic, pos),
                                    sizeof(glm::vec3), POSITION},
-                           {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexOpaque, norm),
+                           {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexClassic, norm),
                                    sizeof(glm::vec3), NORMAL},
-                           {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexOpaque, UV),
+                           {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexClassic, UV),
                                    sizeof(glm::vec2), UV}
                    });
 
