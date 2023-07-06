@@ -50,7 +50,7 @@ class Game : public BaseProject {
     std::vector<glm::vec3> collisionDetectionVertices;
 
     // city blocks parameters
-    const vec3 cityStartingPos = {-36, 0, -48}; // centers city in the square 120x120 map
+    const vec3 CITY_STARTING_POS = {-36, 0, -48}; // centers city in the square 120x120 map
     const int cityOffset = 24; // distance between buildings
     const int cityDim = 3; // in our case 3x4 city so every 3 blocks jump to next row
 
@@ -76,7 +76,7 @@ class Game : public BaseProject {
      * @param index of the model for which to compute the translation
      */
     vec3 computeCityTranslation(int index) {
-        return cityStartingPos + vec3{(index % cityDim) * cityOffset, 0, (index / cityDim) * cityOffset};
+        return CITY_STARTING_POS + vec3{(index % cityDim) * cityOffset, 0, (index / cityDim) * cityOffset};
     }
 
 	// Here you set the main application parameters
@@ -204,6 +204,7 @@ class Game : public BaseProject {
                                       VK_CULL_MODE_BACK_BIT, true);
         // default advanced features: VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, false
         POpaque.init(this, &VClassic, "shaders/OpaqueVert.spv", "shaders/OpaqueFrag.spv", {&DSLGubo, &DSLOpaque});
+        /** back-face culling cuts groud for all assets with attached ground (park & roller coaster): consider enabling **/
         PEmit.init(this, &VClassic, "shaders/EmitVert.spv", "shaders/EmitFrag.spv", {&DSLGubo, &DSLEmit});
         PEmit.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL,
                                     VK_CULL_MODE_NONE, false); /** ROAD TILES REQUIRE NO BACK-FACE CULLING **/
