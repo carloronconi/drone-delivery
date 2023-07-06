@@ -32,6 +32,15 @@ struct OpaqueUniformBlock {
     alignas(16) glm::mat4 nMat;
 };
 
+struct EmitUniformBlock {
+    alignas(4) float amb;
+    alignas(4) float sigma;
+    alignas(16) glm::mat4 mvpMat;
+    alignas(16) glm::mat4 mMat;
+    alignas(16) glm::mat4 nMat;
+    alignas(16) glm::vec3 offset;
+};
+
 struct OverlayUniformBlock {
     alignas(4) float visible; // applies to all instances
     alignas(16) glm::mat4 mvpMat;

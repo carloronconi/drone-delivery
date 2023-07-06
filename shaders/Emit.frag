@@ -21,9 +21,11 @@ layout(set = 1, binding = 0) uniform UniformBufferObject {
     mat4 mvpMat;
     mat4 mMat;
     mat4 nMat;
+    vec3 offset;
 } ubo;
 
 layout(set = 1, binding = 1) uniform sampler2D tex;
+layout(set = 1, binding = 2) uniform sampler2D texEmit;
 
 /*
 1) LIGHTING: DIRECT vs POINT (vs SPOT)
@@ -102,7 +104,10 @@ void main() {
     vec3 lAmbient = gubo.AmbLightColor;
     vec3 ambient = lAmbient * mAmbient;
 
+    // EMISSION
+    vec3 emission = texture(texEmit, fragUV).rgb;		// emission color
+
     // ADDING EVERYTHING
     vec3 reflection = BRDF(eyeDir, normal, lightDir, albedo, ubo.sigma); // last parameter is roughness
-    outColor = vec4(clamp(reflection * lightColor + ambient,0.0,1.0), 1.0f);
+    outColor = vec4(clamp(reflection * lightColor + ambient + emission,0.0,1.0), 1.0f);
 }
