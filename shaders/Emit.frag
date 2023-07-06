@@ -77,8 +77,8 @@ vec3 BRDF(vec3 V, vec3 N, vec3 L, vec3 Md, float sigma) {
 }
 
 const float beta = 2.0f;
-const float g = 1.5;
-const vec3 pointLightPos = vec3(-30.0, 75.0, -30.0);
+const float g = 1.0f;
+const vec3 pointLightPos = vec3(-64.0, 100.0, -64.0);
 
 vec3 pointLightDir() {
     return normalize(pointLightPos - fragPos);
@@ -105,7 +105,7 @@ void main() {
     vec3 ambient = lAmbient * mAmbient;
 
     // EMISSION
-    vec3 emission = texture(texEmit, fragUV).rgb;		// emission color
+    vec3 emission = gubo.usePointLight * texture(texEmit, fragUV).rgb;		// emission color
 
     // ADDING EVERYTHING
     vec3 reflection = BRDF(eyeDir, normal, lightDir, albedo, ubo.sigma); // last parameter is roughness
