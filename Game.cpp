@@ -28,9 +28,9 @@ class Game : public BaseProject {
 	Model<VertexClassic> MPlane, MArrow; /** one per model **/
 	Model<VertexClassic> MBox, MGround;
 	std::array<Model<VertexClassic>, 12> MCity;
-    Model<VertexClassic> MRoad; /** uses instanced-rendering **/
+    Model<VertexClassic> MRoad, MStreet; /** use instanced-rendering **/
 	Model<VertexOverlay> MScore, MLife, MSplash, MWin, MLose, MHelp; /** score and life use instanced-rendering **/
-	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSScore, DSLife, DSSplash, DSWin, DSLose, DSGround, DSHelp, DSRoad; /** one per instance of model (if not using instanced-rendering)**/
+	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSScore, DSLife, DSSplash, DSWin, DSLose, DSGround, DSHelp, DSRoad, DSStreet; /** one per instance of model (if not using instanced-rendering)**/
 	std::array<DescriptorSet, 12> DSCity;
 	Texture TCity, TArrow, TGround, TScore, TLife, TSplash, TWin, TLose, THelp, TEmit;
 	
@@ -38,7 +38,7 @@ class Game : public BaseProject {
 	MetallicUniformBlock uboPlane, uboArrow;
     OpaqueUniformBlock uboBox, uboGround;
     OpaqueUniformBlock uboCity; /** use a single uniform block that gets translated before mapping **/
-    EmitUniformBlock uboRoad;
+    EmitUniformBlock uboRoad, uboStreet;
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboScore, uboLife, uboSplash, uboWin, uboLose, uboHelp;
 
@@ -58,6 +58,11 @@ class Game : public BaseProject {
     const vec3 ROAD_STARTING_POSITION = {48, 0.15, 48};
     const vec3 ROAD_OFFSET = {- 16.0f, 0, 0};
     const int ROAD_ROWS = 6;
+
+    const int STREET_INSTANCES = 24; // 2 12x1 rows
+    const vec3 STREET_STARTING_POSITION = {48, 0.15, - 24};
+    const vec3 STREET_OFFSET = {- 8.0f, 0, 24};
+    const int STREET_ROWS = 12;
 
     const vec3 PLANE_STARTING_POS = {48, 0, 0}; // starts in middle of long side offset to the side
 
@@ -91,9 +96,9 @@ class Game : public BaseProject {
 		initialBackgroundColor = {0.0f, 0.06f, 0.4f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 24;
-		texturesInPool = 24;
-		setsInPool = 24;
+		uniformBlocksInPool = 30;
+		texturesInPool = 30;
+		setsInPool = 30;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 	}
@@ -229,6 +234,7 @@ class Game : public BaseProject {
         MArrow.init(this, &VClassic, "Models/tube.obj", OBJ);
         MBox.init(this, &VClassic, "Models/box_005.mgcg", MGCG);
         MRoad.init(this, &VClassic, "Models/road_0.mgcg", MGCG);
+        MStreet.init(this, &VClassic, "Models/street_0.mgcg", MGCG);
 
         // MGround.init(this, &VMesh, "Models/ground.mgcg", MGCG);
         MGround.vertices = {{{-64, 0, -64}, {0, 1, 0}, {0, 0}},
@@ -314,6 +320,11 @@ class Game : public BaseProject {
                 {1, TEXTURE, 0, &TCity},
                 {2, TEXTURE, 0, &TEmit}
         });
+        DSStreet.init(this, &DSLEmit, {
+                {0, UNIFORM, sizeof(OpaqueUniformBlock), nullptr},
+                {1, TEXTURE, 0, &TCity},
+                {2, TEXTURE, 0, &TEmit}
+        });
         DSGround.init(this, &DSLOpaque, {
                 {0, UNIFORM, sizeof(OpaqueUniformBlock), nullptr},
                 {1, TEXTURE, 0, &TGround}
@@ -364,6 +375,7 @@ class Game : public BaseProject {
 		DSPlane.cleanup();
         DSBox.cleanup();
         DSRoad.cleanup();
+        DSStreet.cleanup();
         DSArrow.cleanup();
         DSGround.cleanup();
 		DSScore.cleanup();
@@ -400,6 +412,7 @@ class Game : public BaseProject {
 		MPlane.cleanup();
         MBox.cleanup();
         MRoad.cleanup();
+        MStreet.cleanup();
         MArrow.cleanup();
         MGround.cleanup();
 		MScore.cleanup();
@@ -481,6 +494,11 @@ class Game : public BaseProject {
         DSRoad.bind(commandBuffer, PEmit, 1, currentImage);
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MRoad.indices.size()), ROAD_INSTANCES, 0, 0, 0);
+
+        MStreet.bind(commandBuffer);
+        DSStreet.bind(commandBuffer, PEmit, 1, currentImage);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MStreet.indices.size()), STREET_INSTANCES, 0, 0, 0);
 
 		POverlay.bind(commandBuffer);
 		MScore.bind(commandBuffer);
@@ -608,6 +626,17 @@ class Game : public BaseProject {
         uboRoad.offset = ROAD_OFFSET;
         uboRoad.dim = static_cast<float>(ROAD_ROWS);
         DSRoad.map(currentImage, &uboRoad, sizeof(uboRoad), 0);
+
+        mat4 streetWorldMat =
+                glm::rotate(mat4(1.0f), glm::radians(90.0f), vec3(0,1,0))
+                * translate(mat4(1), STREET_STARTING_POSITION);
+        uboStreet.amb = 1.0f; uboStreet.sigma = 1.1;
+        uboStreet.mvpMat = projMat * viewMat * streetWorldMat;
+        uboStreet.mMat = streetWorldMat;
+        uboStreet.nMat = glm::inverse(glm::transpose(streetWorldMat));
+        uboStreet.offset = STREET_OFFSET;
+        uboStreet.dim = static_cast<float>(STREET_ROWS);
+        DSStreet.map(currentImage, &uboStreet, sizeof(uboStreet), 0);
 
         static glm::mat4 groundWorldMat = glm::mat4(1);
         /* high gamma makes the ground less shiny and sColor specular reflection color is set to dark green */
