@@ -131,6 +131,13 @@ private:
     }
 
     /**
+     * @return true if plane's speed is pointing north
+     */
+    bool isPointingNorth() {
+        return speed.z > 0;
+    }
+
+    /**
      * behaviour of the plane when a collision is detected, depending on the type of collision
      */
     void reactToCollision() {
@@ -144,10 +151,15 @@ private:
                 speed.y = 0;
 
                 // careful: euler angles returned by quaternion always keep yaw (y) in [0, 90] and compensate with other two
-                // damping helps because it applies inputs slowly (can't just rotation = {1, 0, 0, 0}; because it wouldn't allow pitch to take off)
-                vec3 euler = eulerAngles(rotation);
-                rotation *= rotate(quat(1,0,0,0), rollDamper.damp(euler.x * GROUND_COLLISION_ROT, inputs->deltaT), vec3(- 1, 0, 0))
-                            * rotate(quat(1,0,0,0), pitchDamper.damp(euler.z * GROUND_COLLISION_ROT, inputs->deltaT), vec3(0, 0, - 1));
+
+                // rotate only if previous collision state was NONE (was in the sky)
+                if (!prevCollisions.empty() && prevCollisions[0] == NONE) {
+                    // if looking back: float yaw = M_PI - eulerAngles(rotation).y;
+                    float yaw = isPointingNorth()? eulerAngles(rotation).y : M_PI - eulerAngles(rotation).y;
+                    rotation *= inverse(rotation); // returns rotation to initial state
+                    rotation = rotate(rotation, yaw, vec3{0, 1, 0}); // preserves yaw
+                }
+
 
                 //cout << "COLLISION WITH GROUND DETECTED\n";
                 break;
