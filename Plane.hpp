@@ -35,6 +35,22 @@ struct ControlsMapping {
     }
 };
 
+vec3 easyEuler(quat rotation) {
+    vec3 euler = eulerAngles(rotation);
+    if (oy > 90.f)
+    {
+        fx -= 180.f;
+        fy -= 180.f;
+        fy *= -1.f;
+        fz += 180.f;
+
+        if (ox > 0.f)
+        {
+            fx += 360.f;
+        }
+    }
+}
+
 
 class Plane {
 public:
@@ -146,21 +162,6 @@ private:
                 // careful: euler angles returned by quaternion always keep yaw (y) in [0, 90] and compensate with other two
                 // damping helps because it applies inputs slowly (can't just rotation = {1, 0, 0, 0}; because it wouldn't allow pitch to take off)
                 vec3 euler = eulerAngles(rotation);
-                vec3 correction;
-                if (euler.y > 0) { // left yaw semicircle
-                    if (-90.0 < euler.x && euler.x < 90 ) { // left-up yaw quarter
-                        correction = {- euler.x, 0, - euler.z};
-                    } else {
-                        if (euler.x > 0) {
-                            correction = {M_PI - euler.x, 0, };
-                        } else {
-                            correction = {euler.x - 2.0 * M_PI, 0, };
-                        }
-                    }
-                } else {
-
-                }
-
                 rotation *= rotate(quat(1,0,0,0), rollDamper.damp(euler.x * GROUND_COLLISION_ROT, inputs->deltaT), vec3(- 1, 0, 0))
                             * rotate(quat(1,0,0,0), pitchDamper.damp(euler.z * GROUND_COLLISION_ROT, inputs->deltaT), vec3(0, 0, - 1));
 
