@@ -59,6 +59,7 @@ public:
     // e.g. gravity only would be (0, -9.81, 0)
     // e.g. gravity plus x-wind would be (2.5, -9.81, 0)
     constexpr static const vec3 EXTERNAL_ACCELERATIONS{0, -9.81, 0};
+    constexpr static const vec3 INITIAL_SPEED{0, 0, 0.1};
     // collision constants
     constexpr static const float GROUND_COLLISION_ROT = 0.3;
     constexpr static const float COLLISION_DISTANCE = 1.0f;
@@ -72,7 +73,7 @@ private:
     vec3 initialPosition;
     quat rotation;
     mat4 lastWorldMatrix;
-    vec3 speed{0, 0, 0};
+    vec3 speed = INITIAL_SPEED;
     mat3 uAxes;
     const Wing& wing;
 
@@ -134,7 +135,7 @@ private:
      * @return true if plane's speed is pointing north
      */
     bool isPointingNorth() {
-        return speed.z > 0;
+        return speed.z >= 0;
     }
 
     /**
@@ -306,9 +307,10 @@ public:
     }
 
     void resetState() {
-        speed = {0, 0, 0};
+        speed = INITIAL_SPEED;
         position = initialPosition;
         rotation = {1, 0, 0, 0};
+        prevCollisions.clear();
     }
 
     /**
