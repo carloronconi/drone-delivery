@@ -52,7 +52,7 @@ public:
     constexpr static const float BASE = 2;
     constexpr static const float WING_LIFT_ANGLE = glm::radians(15.0f);
     constexpr static const float WING_INEFFICIENCY = 1.1f;
-    constexpr static const bool PRINT_DEBUG = false;
+    constexpr static const bool PRINT_DEBUG = true;
     // friction deceleration in plane coordinates (z factor already accounted for in wing inefficiency)
     constexpr static const vec3 FRICTION = vec3(5, 1, 1);
     // all external accelerations including gravity
@@ -146,6 +146,21 @@ private:
                 // careful: euler angles returned by quaternion always keep yaw (y) in [0, 90] and compensate with other two
                 // damping helps because it applies inputs slowly (can't just rotation = {1, 0, 0, 0}; because it wouldn't allow pitch to take off)
                 vec3 euler = eulerAngles(rotation);
+                vec3 correction;
+                if (euler.y > 0) { // left yaw semicircle
+                    if (-90.0 < euler.x && euler.x < 90 ) { // left-up yaw quarter
+                        correction = {- euler.x, 0, - euler.z};
+                    } else {
+                        if (euler.x > 0) {
+                            correction = {M_PI - euler.x, 0, };
+                        } else {
+                            correction = {euler.x - 2.0 * M_PI, 0, };
+                        }
+                    }
+                } else {
+
+                }
+
                 rotation *= rotate(quat(1,0,0,0), rollDamper.damp(euler.x * GROUND_COLLISION_ROT, inputs->deltaT), vec3(- 1, 0, 0))
                             * rotate(quat(1,0,0,0), pitchDamper.damp(euler.z * GROUND_COLLISION_ROT, inputs->deltaT), vec3(0, 0, - 1));
 
@@ -209,25 +224,25 @@ private:
         if (currTime - lastPrintTime < 1.0) return;
         lastPrintTime = currTime;
 
-        cout.width(20); cout << left << "Position";
-        cout.width(20); cout << left << "World speed";
+        cout.width(30); cout << left << "Position";
+        cout.width(30); cout << left << "World speed";
         for (const auto& element : additionalInfo) {
-            cout.width(20); cout << left << element.first;
+            cout.width(30); cout << left << element.first;
         }
 
         cout << "\n";
 
-        cout.width(20); cout << left << toString(position);
-        cout.width(20); cout << left << toString(speed);
+        cout.width(30); cout << left << toString(position);
+        cout.width(30); cout << left << toString(speed);
         for (const auto& element : additionalInfo) {
-            cout.width(20); cout << left << toString(element.second);
+            cout.width(30); cout << left << toString(element.second);
         }
 
         cout << "\n";
     }
 
     string toString(vec3 vector) {
-        return to_string((int)vector.x) + " " + to_string((int)vector.y) + " " + to_string((int)vector.z);
+        return to_string((float)vector.x) + " " + to_string((float)vector.y) + " " + to_string((float)vector.z);
     }
 
 public:
@@ -286,7 +301,8 @@ public:
 
         if (PRINT_DEBUG) {
             map<string, vec3> debugInfo;
-            debugInfo["Plane speed"] = planeSpeed;
+            // debugInfo["Plane speed"] = planeSpeed;
+            debugInfo["Euler angles"] = eulerAngles(rotation) * static_cast<float>     (180.0 / M_PI);
             printDebugInfo(debugInfo);
         }
 
