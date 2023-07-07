@@ -39,6 +39,7 @@ struct EmitUniformBlock {
     alignas(16) glm::mat4 mMat;
     alignas(16) glm::mat4 nMat;
     alignas(16) glm::vec3 offset;
+    alignas(4) float dim; // one of the 2 dimensions - other obtained by repeating the instances
 };
 
 struct OverlayUniformBlock {

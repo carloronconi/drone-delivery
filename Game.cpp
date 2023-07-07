@@ -56,6 +56,8 @@ class Game : public BaseProject {
 
     const int ROAD_INSTANCES = 6;
     const vec3 ROAD_STARTING_POSITION = {48, 0.15, 48};
+    const vec3 ROAD_OFFSET = {- 16.0f, 0, 0};
+    const int ROAD_ROWS = 6;
 
     const vec3 PLANE_STARTING_POS = {48, 0, 0}; // starts in middle of long side offset to the side
 
@@ -603,7 +605,8 @@ class Game : public BaseProject {
         uboRoad.mvpMat = projMat * viewMat * roadWorldMat;
         uboRoad.mMat = roadWorldMat;
         uboRoad.nMat = glm::inverse(glm::transpose(roadWorldMat));
-        uboRoad.offset = {- 16.0f, 0.0f, 0.0f};
+        uboRoad.offset = ROAD_OFFSET;
+        uboRoad.dim = static_cast<float>(ROAD_ROWS);
         DSRoad.map(currentImage, &uboRoad, sizeof(uboRoad), 0);
 
         static glm::mat4 groundWorldMat = glm::mat4(1);
