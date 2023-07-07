@@ -51,8 +51,8 @@ class Game : public BaseProject {
 
     // city blocks parameters
     const vec3 CITY_STARTING_POS = {-36, 0, -48}; // centers city in the square 120x120 map
-    const int cityOffset = 24; // distance between buildings
-    const int cityDim = 3; // in our case 3x4 city so every 3 blocks jump to next row
+    const int CITY_OFFSET = 24; // distance between buildings
+    const int CITY_DIM = 3; // in our case 3x4 city so every 3 blocks jump to next row
 
     const int ROAD_INSTANCES = 6;
     const vec3 ROAD_STARTING_POSITION = {48, 0.15, 48};
@@ -76,7 +76,7 @@ class Game : public BaseProject {
      * @param index of the model for which to compute the translation
      */
     vec3 computeCityTranslation(int index) {
-        return CITY_STARTING_POS + vec3{(index % cityDim) * cityOffset, 0, (index / cityDim) * cityOffset};
+        return CITY_STARTING_POS + vec3{(index % CITY_DIM) * CITY_OFFSET, 0, (index / CITY_DIM) * CITY_OFFSET};
     }
 
 	// Here you set the main application parameters
