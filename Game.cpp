@@ -186,8 +186,9 @@ class Game : public BaseProject {
         uboLose.mvpMat = mat4(1);
         uboLose.instancesToDraw = 1.0;
 
-        uboPropeller.offset = PROPELLER_OFFSET;
-        uboPropeller.time = 0.0;
+        uboPlane.amb = 1.0f; uboPlane.gamma = 180.0f; uboPlane.sColor = glm::vec3(1.0f);
+        //uboPropeller.offset = PROPELLER_OFFSET;
+        //uboPropeller.time = 0.0;
 
         cout << "Finished initialising uniforms!\n";
     }
@@ -224,7 +225,8 @@ class Game : public BaseProject {
 				});
 
         DSLPropeller.init(this, {
-                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
+                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
+                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
         });
 
 		DSLGubo.init(this, {
@@ -279,9 +281,12 @@ class Game : public BaseProject {
 
         VAnimation.init(this, {
                 {0, sizeof(VertexAnimation), VK_VERTEX_INPUT_RATE_VERTEX}
-                }, {
-                    {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexAnimation, pos),
-                        sizeof(glm::vec3), POSITION}
+                },{ {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexAnimation, pos),
+                    sizeof(glm::vec3), POSITION},
+                        {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexAnimation, norm),
+                         sizeof(glm::vec3), NORMAL},
+                        {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexAnimation, UV),
+                         sizeof(glm::vec2), UV}
                 });
 
 		// Pipelines [Shader couples]
@@ -301,7 +306,7 @@ class Game : public BaseProject {
 		POverlay.init(this, &VOverlay, "shaders/OverlayVert.spv", "shaders/OverlayFrag.spv", {&DSLOverlay});
 		POverlay.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
  								    VK_CULL_MODE_NONE, true);
-        PPropeller.init(this, &VAnimation, "shaders/AnimationVert.spv", "shaders/AnimationFrag.spv", {&DSLPropeller});
+        PPropeller.init(this, &VAnimation, "shaders/AnimationVert.spv", "shaders/AnimationFrag.spv", {&DSLGubo, &DSLPropeller});
         PPropeller.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL,
                                        VK_CULL_MODE_BACK_BIT, true);
 
@@ -444,7 +449,8 @@ class Game : public BaseProject {
                 {1, TEXTURE, 0, &THelp}
         });
         DSPropeller.init(this, &DSLPropeller, {
-                {0, UNIFORM, sizeof(AnimationUniformBlock), nullptr}
+                {0, UNIFORM, sizeof(AnimationUniformBlock), nullptr},
+                {1, TEXTURE, 0,                            &TCity}
         });
 		DSGubo.init(this, &DSLGubo, {
 					{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
@@ -559,6 +565,12 @@ class Game : public BaseProject {
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MArrow.indices.size()), 1, 0, 0, 0);
 
+        DSGubo.bind(commandBuffer, PPropeller, 0, currentImage);
+        PPropeller.bind(commandBuffer);
+        MPropeller.bind(commandBuffer);
+        DSPropeller.bind(commandBuffer, PPropeller, 1, currentImage);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MPropeller.indices.size()), 1, 0, 0, 0);
 
         DSGubo.bind(commandBuffer, POpaque, 0, currentImage);
 
@@ -622,12 +634,6 @@ class Game : public BaseProject {
         DSHelp.bind(commandBuffer, POverlay, 0, currentImage);
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MHelp.indices.size()), 1, 0, 0, 0);
-
-        PPropeller.bind(commandBuffer);
-        MPropeller.bind(commandBuffer);
-        DSPropeller.bind(commandBuffer, PPropeller, 0, currentImage);
-        vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(MPropeller.indices.size()), PROPELLER_INSTANCES, 0, 0, 0);
 	}
 
     void updateSplashUniformBuffer(uint32_t currentImage, UserInputs& userInputs) {
@@ -725,9 +731,9 @@ class Game : public BaseProject {
         uboHelp.visible = (gameState == 1) ? 1.0f : 0.0f;
         DSHelp.map(currentImage, &uboHelp, sizeof(uboHelp), 0);
 
-        uboPropeller.mvpMat = projMat * viewMat * scale(translate(planeWorldMat, {2, - PROPELLER_OFFSET.y / 2.0, 0}), vec3(5.0));
-        uboPropeller.visible = plane->getSpeedInPlaneCoordinates().x > 0.0; // propeller animation visible only if plane moving forward
-        uboPropeller.time += userInputs.deltaT;
+        uboPropeller.mvpMat = projMat * viewMat * scale(translate(planeWorldMat, {2, - PROPELLER_OFFSET.y / 2.0, 0}), vec3(1.0));
+        uboPropeller.mMat = planeWorldMat;
+        uboPropeller.nMat = glm::inverse(glm::transpose(planeWorldMat));
         DSPropeller.map(currentImage, &uboPropeller, sizeof(uboPropeller), 0);
     }
 
