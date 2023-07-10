@@ -71,7 +71,6 @@ private:
     vec3 position;
     vec3 initialPosition;
     quat rotation;
-    mat4 lastWorldMatrix;
     vec3 speed = INITIAL_SPEED;
     mat3 uAxes;
     const Wing& wing;
@@ -186,7 +185,7 @@ private:
     }
 
     /**
-     * makes flying the plane easier by automatically applying a small amount of roll to return the plane back to neutral roll
+     * [unfinished] makes flying the plane easier by automatically applying a small amount of roll to return the plane back to neutral roll
      * simulates plane with stable V-wing configuration
      * @return value between -1 and 1 similar to stick input
      */
@@ -202,13 +201,13 @@ private:
         else if (3.0 * M_PI / 2.0 <= roll && roll < 2.0 * M_PI) push = 2.0 * roll / (3.0 * M_PI);
         // no push when the plane is flying inverted - with roll between pi/ 2 and 3pi/2
         //cout << "autoroll: " << push << "\n";
-        return 0.0; // return push;
+        return push;
     }
 
     void updateUAxes() {
         // unitary-length axes xyz in plane coordinate rotated to xyz axes in world space
         // used to pass from plane's coordinate system to world coordinate system
-        uAxes = mat4(rotation) * mat4(1, 0, 0, 1,
+        uAxes = toMat4(rotation) * mat4(1, 0, 0, 1,
                                       0, 1, 0, 1,
                                       0, 0, 1, 1,
                                       0, 0, 0, 1);
@@ -265,7 +264,7 @@ public:
 
         float wingLift = wing.computeLift((inverse(uAxes) * speed).z);
 
-        rotation *= rotate(quat(1,0,0,0), rollDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.x * wingLift * (controls.roll - computeAutoRollRotation()) * inputs->deltaT, inputs->deltaT), vec3(1, 0, 0))
+        rotation *= rotate(quat(1,0,0,0), rollDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.x * wingLift * (controls.roll /* - computeAutoRollRotation()*/) * inputs->deltaT, inputs->deltaT), vec3(1, 0, 0))
                 * rotate(quat(1,0,0,0), yawDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.y * wingLift * controls.yaw * inputs->deltaT, inputs->deltaT), vec3(0, 1, 0))
                 * rotate(quat(1,0,0,0), pitchDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.z * wingLift * controls.pitch * inputs->deltaT, inputs->deltaT), vec3(0, 0, 1));
 
@@ -290,9 +289,10 @@ public:
         detectCollisions();
         reactToCollision();
 
-        lastWorldMatrix = translate(mat4(1), vec3(position.x, position.y, position.z)) *
-                          rotate(mat4(rotation), glm::radians(0.0f), glm::vec3(0, 1, 0)) *
-                          glm::scale(glm::mat4(1), glm::vec3(PLANE_SCALE)); //additional transform to scale down the character in character space
+        mat4 world =
+                translate(mat4(1), position) *
+                toMat4(rotation) *
+                scale(mat4(1), vec3(PLANE_SCALE)); //additional transform to scale down the character in character space
 
 
         if (PRINT_DEBUG) {
@@ -301,7 +301,7 @@ public:
             printDebugInfo(debugInfo);
         }
 
-        return lastWorldMatrix;
+        return world;
     }
 
     void resetState() {
