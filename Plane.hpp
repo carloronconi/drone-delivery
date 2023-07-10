@@ -46,7 +46,6 @@ public:
     constexpr static const float MAX_SPEED = 15.0f;
     constexpr static const float ROT_DAMPING = 5.0;
     // plane physics parameters
-    constexpr static const float PLANE_CENTER_OF_LIFT = 1.5f;
     constexpr static const float PLANE_SCALE = 0.1f;
     constexpr static const float MAX_WING_LIFT = 10;
     constexpr static const float BASE = 2;
@@ -291,10 +290,9 @@ public:
         detectCollisions();
         reactToCollision();
 
-        lastWorldMatrix = translate(mat4(1), vec3(position.x, position.y + PLANE_CENTER_OF_LIFT * PLANE_SCALE, position.z)) *
+        lastWorldMatrix = translate(mat4(1), vec3(position.x, position.y, position.z)) *
                           rotate(mat4(rotation), glm::radians(0.0f), glm::vec3(0, 1, 0)) *
-                          glm::scale(glm::mat4(1), glm::vec3(PLANE_SCALE)) * //additional transform to scale down the character in character space
-                          glm::translate(glm::mat4(1), glm::vec3(0.0, - PLANE_CENTER_OF_LIFT, 0.0));
+                          glm::scale(glm::mat4(1), glm::vec3(PLANE_SCALE)); //additional transform to scale down the character in character space
 
 
         if (PRINT_DEBUG) {
