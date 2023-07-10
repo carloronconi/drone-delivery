@@ -37,7 +37,7 @@ class Game : public BaseProject {
 	// C++ storage for uniform variables
 	MetallicUniformBlock uboPlane, uboArrow;
     OpaqueUniformBlock uboBox, uboGround;
-    OpaqueUniformBlock uboCity; /** use a single uniform block that gets translated before mapping **/
+    std::array<OpaqueUniformBlock, 12> uboCity;
     EmitUniformBlock uboRoad, uboStreet;
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboScore, uboLife, uboSplash, uboWin, uboLose, uboHelp;
@@ -119,6 +119,68 @@ class Game : public BaseProject {
                         v.pos + computeCityTranslation(i));
             }
         }
+    }
+
+    /**
+     * computes fixed components of ubos only once instead of re-computing them at every frame (e.g. world matrices of fixed objects)
+     */
+    void initUniforms() {
+        uboSplash.mvpMat = glm::mat4(1);
+        uboSplash.instancesToDraw = 1.0;
+
+        gubo.DlightDir = glm::normalize(glm::vec3(1, 2, 3));
+        gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+        gubo.AmbLightColor = glm::vec3(0.9f);
+
+        for (int i = 0; i < MCity.size(); ++i) {
+            uboCity[i].amb = 1.0f; uboCity[i].sigma = 1.1;
+            uboCity[i].mMat = translate(mat4(1), computeCityTranslation(i));
+            uboCity[i].nMat = glm::inverse(glm::transpose(uboCity[i].mMat));
+        }
+
+        uboPlane.amb = 1.0f; uboPlane.gamma = 180.0f; uboPlane.sColor = glm::vec3(1.0f);
+
+        uboArrow.amb = 1.0f; uboArrow.gamma = 180.0f; uboArrow.sColor = glm::vec3(1.0f);
+
+        uboBox.amb = 1.0f; uboBox.sigma = 1.1;
+
+        uboRoad.mMat =
+                glm::rotate(mat4(1.0f), glm::radians(90.0f), vec3(0,1,0))
+                * translate(mat4(1), ROAD_STARTING_POSITION);
+        uboRoad.amb = 1.0f; uboRoad.sigma = 1.1;
+        uboRoad.nMat = glm::inverse(glm::transpose(uboRoad.mMat));
+        uboRoad.offset = ROAD_OFFSET;
+        uboRoad.dim = static_cast<float>(ROAD_ROWS);
+
+        uboStreet.mMat =
+                glm::rotate(mat4(1.0f), glm::radians(90.0f), vec3(0,1,0))
+                * translate(mat4(1), STREET_STARTING_POSITION);
+        uboStreet.amb = 1.0f; uboStreet.sigma = 1.1;
+        uboStreet.nMat = glm::inverse(glm::transpose(uboStreet.mMat));
+        uboStreet.offset = STREET_OFFSET;
+        uboStreet.dim = static_cast<float>(STREET_ROWS);
+
+        /* high gamma makes the ground less shiny and sColor specular reflection color is set to dark green */
+        uboGround.amb = 1.0f; uboGround.sigma = 1.1;
+        uboGround.mMat = mat4(1);
+        uboGround.nMat = glm::inverse(glm::transpose(uboGround.mMat));
+
+        uboScore.mvpMat = mat4(1);
+        uboScore.offset = {SCORE_OFFSET, 0}; /** offset between identical instances **/
+
+        uboLife.mvpMat = glm::translate(glm::mat4(1), glm::vec3(0, LIFE_DISTANCE, 0));
+        uboLife.offset = {SCORE_OFFSET, 0}; /** offset between identical instances **/
+
+        uboHelp.mvpMat = mat4(1);
+        uboHelp.instancesToDraw = 1.0;
+
+        uboWin.mvpMat = mat4(1);
+        uboWin.instancesToDraw = 1.0;
+
+        uboLose.mvpMat = mat4(1);
+        uboLose.instancesToDraw = 1.0;
+
+        cout << "Finished initialising uniforms!\n";
     }
 	
 	// Here you load and setup all your Vulkan Models and Texutures.
@@ -287,6 +349,7 @@ class Game : public BaseProject {
         TEmit.init(this, "textures/city_emit.png");
 
 		initGameLogic();
+        initUniforms();
 	}
 	
 	// Here you create your pipelines and Descriptor Sets!
@@ -528,8 +591,6 @@ class Game : public BaseProject {
 
     void updateSplashUniformBuffer(uint32_t currentImage, UserInputs& userInputs) {
         uboSplash.visible = (gameState == SPLASH) ? 1.0f : 0.0f;
-        uboSplash.mvpMat = glm::mat4(1);
-        uboSplash.instancesToDraw = 1.0;
         DSSplash.map(currentImage, &uboSplash, sizeof(uboSplash), 0);
     }
 
@@ -556,16 +617,13 @@ class Game : public BaseProject {
             lives--;
         }
 
-        glm::mat4 worldMat = plane->computeWorldMatrix();
-        glm::vec3 camPos = computeCameraPosition(worldMat, userInputs);
+        glm::mat4 planeWorldMat = plane->computeWorldMatrix();
+        glm::vec3 camPos = computeCameraPosition(planeWorldMat, userInputs);
         glm::vec3 planePos = plane->getPositionInWorldCoordinates();
         glm::mat4 viewMat = glm::lookAt(camPos, planePos, glm::vec3(0.0f, 1.0f, 0.0f)) ;
         glm::mat4 projMat = glm::perspective(FOVy, Ar, nearPlane, farPlane);
         projMat[1][1] *= -1;
 
-        gubo.DlightDir = glm::normalize(glm::vec3(1, 2, 3));
-        gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-        gubo.AmbLightColor = glm::vec3(0.9f);
         gubo.eyePos = camPos;
         gubo.usePointLight = (userInputs.handleQ)? 1.0 : 0.0;
         // Writes value to the GPU
@@ -580,21 +638,14 @@ class Game : public BaseProject {
          * has its own Model View Projection matrix (mvpMat), as you see below, and they all move using the World matrix
          */
 
-        // v.pos + cityStartingPos + vec3{(i * cityOffset) % cityDim, 0, i * cityOffset / cityDim});
-        static mat4 cityWorldMat;
-        uboCity.amb = 1.0f; uboCity.sigma = 1.1;
         for (int i = 0; i < MCity.size(); ++i) {
-            cityWorldMat = translate(mat4(1), computeCityTranslation(i));
-            uboCity.mvpMat = projMat * viewMat * cityWorldMat;
-            uboCity.mMat = cityWorldMat;
-            uboCity.nMat = glm::inverse(glm::transpose(cityWorldMat));
-            DSCity[i].map(currentImage, &uboCity, sizeof(uboCity), 0);
+            uboCity[i].mvpMat = projMat * viewMat * uboCity[i].mMat;
+            DSCity[i].map(currentImage, &uboCity[i], sizeof(uboCity[i]), 0);
         }
 
-        uboPlane.amb = 1.0f; uboPlane.gamma = 180.0f; uboPlane.sColor = glm::vec3(1.0f);
-        uboPlane.mvpMat = projMat * viewMat * worldMat;
-        uboPlane.mMat = worldMat;
-        uboPlane.nMat = glm::inverse(glm::transpose(worldMat));
+        uboPlane.mvpMat = projMat * viewMat * planeWorldMat;
+        uboPlane.mMat = planeWorldMat; // plane world mat changes at each frame
+        uboPlane.nMat = glm::inverse(glm::transpose(planeWorldMat));
         DSPlane.map(currentImage, &uboPlane, sizeof(uboPlane), 0);
 
         if (box->isTargetHit()) {
@@ -602,79 +653,45 @@ class Game : public BaseProject {
             targetPos.z = static_cast<float>(rand() % RANGE + START);
             if (gameState == 1) score++;
         }
-        glm::mat4 arrowWorldMat = glm::translate(glm::mat4(1), glm::vec3(targetPos.x, -2, targetPos.z));
-        uboArrow.amb = 1.0f; uboArrow.gamma = 180.0f; uboArrow.sColor = glm::vec3(1.0f);
-        uboArrow.mvpMat = projMat * viewMat * arrowWorldMat;
-        uboArrow.mMat = arrowWorldMat;
-        uboArrow.nMat = glm::inverse(glm::transpose(arrowWorldMat));
+
+        uboArrow.mMat = glm::translate(glm::mat4(1), glm::vec3(targetPos.x, -2, targetPos.z));
+        uboArrow.mvpMat = projMat * viewMat * uboArrow.mMat;
+        uboArrow.nMat = glm::inverse(glm::transpose(uboArrow.mMat));
         DSArrow.map(currentImage, &uboArrow, sizeof(uboArrow), 0);
 
-        glm::mat4 boxWorldMat = box->computeWorldMatrix();
-        uboBox.amb = 1.0f; uboBox.sigma = 1.1;
-        uboBox.mvpMat = projMat * viewMat * boxWorldMat;
-        uboBox.mMat = boxWorldMat;
-        uboBox.nMat = glm::inverse(glm::transpose(boxWorldMat));
+        uboBox.mMat = box->computeWorldMatrix();
+        uboBox.mvpMat = projMat * viewMat * uboBox.mMat;
+        uboBox.nMat = glm::inverse(glm::transpose(uboBox.mMat));
         DSBox.map(currentImage, &uboBox, sizeof(uboBox), 0);
 
-        mat4 roadWorldMat =
-                glm::rotate(mat4(1.0f), glm::radians(90.0f), vec3(0,1,0))
-                * translate(mat4(1), ROAD_STARTING_POSITION);
-        uboRoad.amb = 1.0f; uboRoad.sigma = 1.1;
-        uboRoad.mvpMat = projMat * viewMat * roadWorldMat;
-        uboRoad.mMat = roadWorldMat;
-        uboRoad.nMat = glm::inverse(glm::transpose(roadWorldMat));
-        uboRoad.offset = ROAD_OFFSET;
-        uboRoad.dim = static_cast<float>(ROAD_ROWS);
+        uboRoad.mvpMat = projMat * viewMat * uboRoad.mMat;
         DSRoad.map(currentImage, &uboRoad, sizeof(uboRoad), 0);
 
-        mat4 streetWorldMat =
-                glm::rotate(mat4(1.0f), glm::radians(90.0f), vec3(0,1,0))
-                * translate(mat4(1), STREET_STARTING_POSITION);
-        uboStreet.amb = 1.0f; uboStreet.sigma = 1.1;
-        uboStreet.mvpMat = projMat * viewMat * streetWorldMat;
-        uboStreet.mMat = streetWorldMat;
-        uboStreet.nMat = glm::inverse(glm::transpose(streetWorldMat));
-        uboStreet.offset = STREET_OFFSET;
-        uboStreet.dim = static_cast<float>(STREET_ROWS);
+        uboStreet.mvpMat = projMat * viewMat * uboStreet.mMat;
         DSStreet.map(currentImage, &uboStreet, sizeof(uboStreet), 0);
 
-        static glm::mat4 groundWorldMat = glm::mat4(1);
-        /* high gamma makes the ground less shiny and sColor specular reflection color is set to dark green */
-        uboGround.amb = 1.0f; uboGround.sigma = 1.1;
-        uboGround.mvpMat = projMat * viewMat * groundWorldMat;
-        uboGround.mMat = groundWorldMat;
-        uboGround.nMat = glm::inverse(glm::transpose(groundWorldMat));
+        uboGround.mvpMat = projMat * viewMat * uboGround.mMat;
         DSGround.map(currentImage, &uboGround, sizeof(uboGround), 0);
 
         uboScore.visible = (gameState == 1) ? 1.0f : 0.0f;
-        uboScore.mvpMat = glm::translate(glm::mat4(1), glm::vec3(0, 0, 0));
-        uboScore.offset = {SCORE_OFFSET, 0}; /** offset between identical instances **/
         uboScore.instancesToDraw = static_cast<float>(WINNING_SCORE - score);
         DSScore.map(currentImage, &uboScore, sizeof(uboScore), 0);
 
         uboLife.visible = (gameState == 1) ? 1.0f : 0.0f;
-        uboLife.mvpMat = glm::translate(glm::mat4(1), glm::vec3(0, LIFE_DISTANCE, 0));
-        uboLife.offset = {SCORE_OFFSET, 0}; /** offset between identical instances **/
         uboLife.instancesToDraw = static_cast<float>(lives);
         DSLife.map(currentImage, &uboLife, sizeof(uboLife), 0);
 
         uboHelp.visible = (gameState == 1) ? 1.0f : 0.0f;
-        uboHelp.mvpMat = glm::mat4(1);
-        uboHelp.instancesToDraw = 1.0;
         DSHelp.map(currentImage, &uboHelp, sizeof(uboHelp), 0);
     }
 
     void updateWinUniformBuffer(uint32_t currentImage, UserInputs& userInputs) {
         uboWin.visible = (gameState == WON) ? 1.0f : 0.0f;
-        uboWin.mvpMat = glm::mat4(1);
-        uboWin.instancesToDraw = 1.0;
         DSWin.map(currentImage, &uboWin, sizeof(uboWin), 0);
     }
 
     void updateLoseUniformBuffer(uint32_t currentImage, UserInputs& userInputs) {
         uboLose.visible = (gameState == LOST) ? 1.0f : 0.0f;
-        uboLose.mvpMat = glm::mat4(1);
-        uboLose.instancesToDraw = 1.0;
         DSLose.map(currentImage, &uboLose, sizeof(uboLose), 0);
     }
 
