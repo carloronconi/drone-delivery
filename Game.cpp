@@ -74,7 +74,7 @@ class Game : public BaseProject {
     const int STARTING_LIVES = 3;
 
     const int PROPELLER_INSTANCES = 2;
-    const vec3 PROPELLER_OFFSET = {0, 0.5, 0};
+    const vec3 PROPELLER_OFFSET = {0, 0, 0.5};
 
     const vec3 PLANE_STARTING_POS = {48, 0, 0}; // starts in middle of long side offset to the side
 
