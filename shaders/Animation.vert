@@ -10,6 +10,8 @@ layout(binding = 0) uniform UniformBufferObject {
 
 layout(location = 0) in vec3 inPosition;
 
+layout(location = 0) out vec3 fragPos;
+
 void main() {
 	vec3 offset = ubo.offset * gl_InstanceIndex;
 	gl_Position = ubo.mvpMat * vec4((inPosition + offset) * ubo.visible, 1.0f);
