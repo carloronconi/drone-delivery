@@ -53,6 +53,7 @@ struct AnimationUniformBlock {
     alignas(4) float visible;
     alignas(16) glm::mat4 mvpMat;
     alignas(16) glm::vec3 offset;
+    alignas(4) float time;
 };
 
 struct GlobalUniformBlock {
@@ -76,7 +77,7 @@ struct VertexOverlay {
 };
 
 struct VertexAnimation {
-    glm::vec2 pos;
+    glm::vec3 pos;
 };
 
 enum GameState {SPLASH, PLAYING, WON, LOST};
