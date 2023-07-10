@@ -48,6 +48,7 @@ class Game : public BaseProject {
     const int RANGE = 120; // target random position xz range
     const int START = -60; // starting value
     std::vector<glm::vec3> collisionDetectionVertices;
+    std::vector<std::vector<glm::vec3>*> collisionDetectionVert;
 
     // city blocks parameters
     const vec3 CITY_STARTING_POS = {-36, 0, -48}; // centers city in the square 120x120 map
@@ -114,6 +115,7 @@ class Game : public BaseProject {
         targetPos.y = 0;
         targetPos.z = static_cast<float>(rand() % RANGE + START);
         for (int i = 0; i < MCity.size(); ++i) {
+            collisionDetectionVert.push_back(MCity[i].vertices);
             for (auto v : MCity[i].vertices) {
                 collisionDetectionVertices.push_back(
                         v.pos + computeCityTranslation(i));

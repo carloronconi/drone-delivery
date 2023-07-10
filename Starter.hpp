@@ -207,7 +207,16 @@ struct VertexDescriptor {
 enum ModelType {OBJ, GLTF, MGCG};
 
 template <class Vert>
-class Model {
+class ModelInterface {
+    virtual bool isCollisionDetected() {return false;}
+    virtual const std::vector<Vert>& getVertices() {
+        static const std::vector<Vert> empty;
+        return empty;
+    };
+};
+
+template <class Vert>
+class Model : public ModelInterface<Vert> {
 	BaseProject *BP;
 	
 	VkBuffer vertexBuffer;
@@ -215,6 +224,7 @@ class Model {
 	VkBuffer indexBuffer;
 	VkDeviceMemory indexBufferMemory;
 	VertexDescriptor *VD;
+    bool collisionDetection;
 
 	public:
 	std::vector<Vert> vertices{};
@@ -228,6 +238,9 @@ class Model {
 	void initMesh(BaseProject *bp, VertexDescriptor *VD);
 	void cleanup();
   	void bind(VkCommandBuffer commandBuffer);
+
+    bool isCollisionDetected() override {return collisionDetection;}
+    const std::vector<Vert>& getVertices() override;
 };
 
 struct Texture {
@@ -2354,6 +2367,11 @@ void Model<Vert>::bind(VkCommandBuffer commandBuffer) {
 	// property .indexBuffer of models, contains the VkBuffer handle to its index buffer
 	vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0,
 							VK_INDEX_TYPE_UINT32);
+}
+
+template<class Vert>
+const std::vector<Vert>& Model<Vert>::getVertices() {
+    return vertices;
 }
 
 
