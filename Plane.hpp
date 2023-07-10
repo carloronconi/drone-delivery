@@ -322,6 +322,10 @@ public:
         return speed;
     }
 
+    vec3 getSpeedInPlaneCoordinates() {
+        return inverse(uAxes) * speed;
+    }
+
     /**
      * tells if a life-decreasing detection is detected
      * right now only building collisions are considered life-decreasing, but implementation can change to include ground

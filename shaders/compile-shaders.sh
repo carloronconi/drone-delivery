@@ -6,3 +6,5 @@ glslc Overlay.frag -o OverlayFrag.spv
 glslc Overlay.vert -o OverlayVert.spv
 glslc Emit.frag -o EmitFrag.spv
 glslc Emit.vert -o EmitVert.spv
+glslc Animation.frag -o AnimationFrag.spv
+glslc Animation.vert -o AnimationVert.spv
