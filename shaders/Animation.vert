@@ -2,12 +2,10 @@
 #extension GL_ARB_separate_shader_objects : enable
 
 layout(set = 1, binding = 0) uniform UniformBufferObject {
-	float amb;
-	float gamma;
-	vec3 sColor;
+	float visible;
 	mat4 mvpMat;
-	mat4 mMat;
-	mat4 nMat;
+	vec3 offset;
+	float time;
 } ubo;
 
 layout(location = 0) in vec3 inPosition;
@@ -20,7 +18,7 @@ layout(location = 2) out vec2 outUV;
 
 void main() {
 	gl_Position = ubo.mvpMat * vec4(inPosition, 1.0);
-	fragPos = (ubo.mMat * vec4(inPosition, 1.0)).xyz;
-	fragNorm = (ubo.nMat * vec4(inNorm, 0.0)).xyz;
+	fragPos = (ubo.mvpMat * vec4(inPosition, 1.0)).xyz;
+	fragNorm = (ubo.mvpMat * vec4(inNorm, 0.0)).xyz;
 	outUV = inUV;
 }

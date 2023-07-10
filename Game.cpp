@@ -186,9 +186,8 @@ class Game : public BaseProject {
         uboLose.mvpMat = mat4(1);
         uboLose.instancesToDraw = 1.0;
 
-        uboPlane.amb = 1.0f; uboPlane.gamma = 180.0f; uboPlane.sColor = glm::vec3(1.0f);
-        //uboPropeller.offset = PROPELLER_OFFSET;
-        //uboPropeller.time = 0.0;
+        uboPropeller.offset = PROPELLER_OFFSET;
+        uboPropeller.time = 0.0;
 
         cout << "Finished initialising uniforms!\n";
     }
@@ -449,8 +448,7 @@ class Game : public BaseProject {
                 {1, TEXTURE, 0, &THelp}
         });
         DSPropeller.init(this, &DSLPropeller, {
-                {0, UNIFORM, sizeof(AnimationUniformBlock), nullptr},
-                {1, TEXTURE, 0,                            &TCity}
+                {0, UNIFORM, sizeof(AnimationUniformBlock), nullptr}
         });
 		DSGubo.init(this, &DSLGubo, {
 					{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
@@ -570,7 +568,7 @@ class Game : public BaseProject {
         MPropeller.bind(commandBuffer);
         DSPropeller.bind(commandBuffer, PPropeller, 1, currentImage);
         vkCmdDrawIndexed(commandBuffer,
-                         static_cast<uint32_t>(MPropeller.indices.size()), 1, 0, 0, 0);
+                         static_cast<uint32_t>(MPropeller.indices.size()), PROPELLER_INSTANCES, 0, 0, 0);
 
         DSGubo.bind(commandBuffer, POpaque, 0, currentImage);
 
@@ -732,8 +730,8 @@ class Game : public BaseProject {
         DSHelp.map(currentImage, &uboHelp, sizeof(uboHelp), 0);
 
         uboPropeller.mvpMat = projMat * viewMat * scale(translate(planeWorldMat, {2, - PROPELLER_OFFSET.y / 2.0, 0}), vec3(1.0));
-        uboPropeller.mMat = planeWorldMat;
-        uboPropeller.nMat = glm::inverse(glm::transpose(planeWorldMat));
+        uboPropeller.visible = plane->getSpeedInPlaneCoordinates().x > 0.0; // propeller animation visible only if plane moving forward
+        uboPropeller.time += userInputs.deltaT;
         DSPropeller.map(currentImage, &uboPropeller, sizeof(uboPropeller), 0);
     }
 

@@ -50,12 +50,10 @@ struct OverlayUniformBlock {
 };
 
 struct AnimationUniformBlock {
-    alignas(4) float amb;
-    alignas(4) float gamma;
-    alignas(16) glm::vec3 sColor;
+    alignas(4) float visible;
     alignas(16) glm::mat4 mvpMat;
-    alignas(16) glm::mat4 mMat;
-    alignas(16) glm::mat4 nMat;
+    alignas(16) glm::vec3 offset;
+    alignas(4) float time;
 };
 
 struct GlobalUniformBlock {
