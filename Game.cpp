@@ -15,13 +15,13 @@ class Game : public BaseProject {
 	float Ar;
 
 	// Descriptor Layouts ["classes" of what will be passed to the shaders]
-	DescriptorSetLayout DSLGubo, DSLMetallic, DSLOpaque, DSLEmit, DSLOverlay;
+	DescriptorSetLayout DSLGubo, DSLMetallic, DSLOpaque, DSLEmit, DSLOverlay, DSLPropeller;
 
 	// Vertex formats
-	VertexDescriptor VClassic, VOverlay;
+	VertexDescriptor VClassic, VOverlay, VAnimation;
 
 	// Pipelines [Shader couples]
-	Pipeline PMetallic, POpaque, PEmit, POverlay;
+	Pipeline PMetallic, POpaque, PEmit, POverlay, PPropeller;
 
 	// Models, textures and Descriptors (values assigned to the uniforms)
 	// Please note that Model objects depends on the corresponding vertex structure
@@ -30,7 +30,8 @@ class Game : public BaseProject {
 	std::array<Model<VertexClassic>, 12> MCity;
     Model<VertexClassic> MRoad, MStreet; /** use instanced-rendering **/
 	Model<VertexOverlay> MScore, MLife, MSplash, MWin, MLose, MHelp; /** score and life use instanced-rendering **/
-	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSScore, DSLife, DSSplash, DSWin, DSLose, DSGround, DSHelp, DSRoad, DSStreet; /** one per instance of model (if not using instanced-rendering)**/
+	Model<VertexAnimation> MPropeller;
+	DescriptorSet DSGubo, DSPlane, DSArrow, DSBox, DSScore, DSLife, DSSplash, DSWin, DSLose, DSGround, DSHelp, DSRoad, DSStreet, DSPropeller; /** one per instance of model (if not using instanced-rendering)**/
 	std::array<DescriptorSet, 12> DSCity;
 	Texture TCity, TArrow, TGround, TScore, TLife, TSplash, TWin, TLose, THelp, TEmit;
 	
@@ -41,6 +42,7 @@ class Game : public BaseProject {
     EmitUniformBlock uboRoad, uboStreet;
 	GlobalUniformBlock gubo;
 	OverlayUniformBlock uboScore, uboLife, uboSplash, uboWin, uboLose, uboHelp;
+    AnimationUniformBlock uboPropeller;
 
 	GameState gameState = SPLASH;
     glm::vec3 targetPos;
@@ -64,17 +66,21 @@ class Game : public BaseProject {
     const vec3 STREET_OFFSET = {- 8.0f, 0, 24};
     const int STREET_ROWS = 12;
 
-    const vec3 PLANE_STARTING_POS = {48, 0, 0}; // starts in middle of long side offset to the side
-
-    LogarithmicWing wingImplementation = LogarithmicWing(Plane::MAX_WING_LIFT, Plane::MAX_SPEED, Plane::BASE);
-    Plane* const plane = new Plane(wingImplementation, collisionDetectionVertices, PLANE_STARTING_POS);
-    Package* const box = new Package(plane->getPositionInWorldCoordinates(), plane->getSpeedInWorldCoordinates(), targetPos);
     const float SCORE_OFFSET = 0.15;
     const glm::vec2 SCORE_BOTTOM_LEFT = {-0.9f, 0.8f};
     const float SCORE_WIDTH = 0.10;
     const float LIFE_DISTANCE = -0.2;
     const int WINNING_SCORE = 5; /** or if instances are identical use INSTANCED RENDERING! sharing DS **/
     const int STARTING_LIVES = 3;
+
+    const int PROPELLER_INSTANCES = 2;
+    const vec3 PROPELLER_OFFSET = {22.5, 0, 0};
+
+    const vec3 PLANE_STARTING_POS = {48, 0, 0}; // starts in middle of long side offset to the side
+
+    LogarithmicWing wingImplementation = LogarithmicWing(Plane::MAX_WING_LIFT, Plane::MAX_SPEED, Plane::BASE);
+    Plane* const plane = new Plane(wingImplementation, collisionDetectionVertices, PLANE_STARTING_POS);
+    Package* const box = new Package(plane->getPositionInWorldCoordinates(), plane->getSpeedInWorldCoordinates(), targetPos);
     int score = 0;
     int lives = STARTING_LIVES;
 
@@ -96,9 +102,9 @@ class Game : public BaseProject {
 		initialBackgroundColor = {0.0f, 0.06f, 0.4f, 1.0f};
 		
 		// Descriptor pool sizes
-		uniformBlocksInPool = 30;
+		uniformBlocksInPool = 31;
 		texturesInPool = 30;
-		setsInPool = 30;
+		setsInPool = 31;
 		
 		Ar = (float)windowWidth / (float)windowHeight;
 	}
@@ -180,6 +186,9 @@ class Game : public BaseProject {
         uboLose.mvpMat = mat4(1);
         uboLose.instancesToDraw = 1.0;
 
+        uboPropeller.offset = PROPELLER_OFFSET;
+        uboPropeller.time = 0.0;
+
         cout << "Finished initialising uniforms!\n";
     }
 	
@@ -212,7 +221,12 @@ class Game : public BaseProject {
 		DSLOverlay.init(this, {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
 					{1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
-				});				
+				});
+
+        DSLPropeller.init(this, {
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
+        });
+
 		DSLGubo.init(this, {
 					{0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
 				});
@@ -263,6 +277,13 @@ class Game : public BaseProject {
 				         sizeof(glm::vec2), UV}
 				});
 
+        VAnimation.init(this, {
+                {0, sizeof(VertexAnimation), VK_VERTEX_INPUT_RATE_VERTEX}
+                }, {
+                    {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexAnimation, pos),
+                        sizeof(glm::vec3), POSITION}
+                });
+
 		// Pipelines [Shader couples]
 		// The second parameter is the pointer to the vertex definition
 		// Third and fourth parameters are respectively the vertex and fragment shaders
@@ -280,6 +301,9 @@ class Game : public BaseProject {
 		POverlay.init(this, &VOverlay, "shaders/OverlayVert.spv", "shaders/OverlayFrag.spv", {&DSLOverlay});
 		POverlay.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
  								    VK_CULL_MODE_NONE, true);
+        PPropeller.init(this, &VAnimation, "shaders/AnimationVert.spv", "shaders/AnimationFrag.spv", {&DSLPropeller});
+        PPropeller.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL,
+                                       VK_CULL_MODE_BACK_BIT, true);
 
 		// Models, textures and Descriptors (values assigned to the uniforms)
 
@@ -334,6 +358,8 @@ class Game : public BaseProject {
         MHelp.vertices = MSplash.vertices;
         MHelp.indices = MSplash.indices;
         MHelp.initMesh(this, &VOverlay);
+
+        MPropeller.init(this, &VAnimation, "Models/propeller_animation.obj", OBJ);
 		
 		// Create the textures
 		// The second parameter is the file name
@@ -359,6 +385,7 @@ class Game : public BaseProject {
         POpaque.create();
         PEmit.create();
 		POverlay.create();
+        PPropeller.create();
 
         for (auto &dsCity : DSCity) {
             dsCity.init(this, &DSLOpaque, {
@@ -416,6 +443,9 @@ class Game : public BaseProject {
                 {0, UNIFORM, sizeof(OverlayUniformBlock), nullptr},
                 {1, TEXTURE, 0, &THelp}
         });
+        DSPropeller.init(this, &DSLPropeller, {
+                {0, UNIFORM, sizeof(AnimationUniformBlock), nullptr}
+        });
 		DSGubo.init(this, &DSLGubo, {
 					{0, UNIFORM, sizeof(GlobalUniformBlock), nullptr}
 				});
@@ -429,6 +459,7 @@ class Game : public BaseProject {
         POpaque.cleanup();
         PEmit.cleanup();
 		POverlay.cleanup();
+        PPropeller.cleanup();
 
 		// Cleanup datasets
         for (auto &dsCity : DSCity) {
@@ -448,6 +479,7 @@ class Game : public BaseProject {
         DSLose.cleanup();
 		DSGubo.cleanup();
         DSHelp.cleanup();
+        DSPropeller.cleanup();
 	}
 
 	// Here you destroy all the Models, Texture and Desc. Set Layouts you created!
@@ -484,20 +516,23 @@ class Game : public BaseProject {
         MWin.cleanup();
         MLose.cleanup();
         MHelp.cleanup();
+        MPropeller.cleanup();
 		
 		// Cleanup descriptor set layouts
 		DSLMetallic.cleanup();
         DSLOpaque.cleanup();
         DSLEmit.cleanup();
 		DSLOverlay.cleanup();
+        DSLPropeller.cleanup();
 
 		DSLGubo.cleanup();
 		
-		// Destroies the pipelines
+		// Destroys the pipelines
 		PMetallic.destroy();
         POpaque.destroy();
         PEmit.destroy();
 		POverlay.destroy();
+        PPropeller.destroy();
 	}
 	
 	// Here it is the creation of the command buffer:
@@ -524,6 +559,11 @@ class Game : public BaseProject {
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MArrow.indices.size()), 1, 0, 0, 0);
 
+        PPropeller.bind(commandBuffer);
+        MPropeller.bind(commandBuffer);
+        DSPropeller.bind(commandBuffer, PPropeller, 0, currentImage);
+        vkCmdDrawIndexed(commandBuffer,
+                         static_cast<uint32_t>(MPropeller.indices.size()), PROPELLER_INSTANCES, 0, 0, 0);
 
         DSGubo.bind(commandBuffer, POpaque, 0, currentImage);
 
@@ -683,6 +723,12 @@ class Game : public BaseProject {
 
         uboHelp.visible = (gameState == 1) ? 1.0f : 0.0f;
         DSHelp.map(currentImage, &uboHelp, sizeof(uboHelp), 0);
+
+        //cout << "plane x speed: " << plane->getSpeedInPlaneCoordinates().x << "\n";
+        uboPropeller.mvpMat = projMat * viewMat * translate(scale(planeWorldMat, vec3(0.2)), {- PROPELLER_OFFSET.x / 2.0, 5.0, 7.0});
+        uboPropeller.visible = glm::length(plane->getSpeedInWorldCoordinates()) > 0.01; // propeller animation visible only if plane moving forward
+        uboPropeller.time += userInputs.deltaT;
+        DSPropeller.map(currentImage, &uboPropeller, sizeof(uboPropeller), 0);
     }
 
     void updateWinUniformBuffer(uint32_t currentImage, UserInputs& userInputs) {
