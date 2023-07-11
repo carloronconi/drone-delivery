@@ -755,7 +755,10 @@ class Game : public BaseProject {
 
 		switch(gameState) {
 		  case SPLASH: {
-              if(userInputs->handleNext) gameState = PLAYING;
+              if(userInputs->handleNext) {
+                  gameState = PLAYING;
+                  plane->resetState();
+              }
               break;
           }
 		  case PLAYING: {

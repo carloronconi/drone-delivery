@@ -247,7 +247,9 @@ public:
             position(initialPosition),
             initialPosition(initialPosition),
             rotation(initialRotation),
-            verticesToAvoid(collisionDetectionVertices) {}
+            verticesToAvoid(collisionDetectionVertices) {
+        resetState(); // maybe this can fix flipping? DIDN't FIX IT!
+    }
 
     void updateInputs(UserInputs* userInputs) {
         inputs = userInputs;
