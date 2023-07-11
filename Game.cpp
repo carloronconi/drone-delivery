@@ -74,7 +74,7 @@ class Game : public BaseProject {
     const int STARTING_LIVES = 3;
 
     const int PROPELLER_INSTANCES = 2;
-    const vec3 PROPELLER_OFFSET = {0, 0, 0.5};
+    const vec3 PROPELLER_OFFSET = {22.5, 0, 0};
 
     const vec3 PLANE_STARTING_POS = {48, 0, 0}; // starts in middle of long side offset to the side
 
@@ -724,8 +724,9 @@ class Game : public BaseProject {
         uboHelp.visible = (gameState == 1) ? 1.0f : 0.0f;
         DSHelp.map(currentImage, &uboHelp, sizeof(uboHelp), 0);
 
-        uboPropeller.mvpMat = projMat * viewMat * scale(translate(planeWorldMat, {2, - PROPELLER_OFFSET.y / 2.0, 0}), vec3(1.0));
-        uboPropeller.visible = plane->getSpeedInPlaneCoordinates().x > 0.0; // propeller animation visible only if plane moving forward
+        //cout << "plane x speed: " << plane->getSpeedInPlaneCoordinates().x << "\n";
+        uboPropeller.mvpMat = projMat * viewMat * translate(scale(planeWorldMat, vec3(0.2)), {- PROPELLER_OFFSET.x / 2.0, 5.0, 7.0});
+        uboPropeller.visible = glm::length(plane->getSpeedInWorldCoordinates()) > 0.01; // propeller animation visible only if plane moving forward
         uboPropeller.time += userInputs.deltaT;
         DSPropeller.map(currentImage, &uboPropeller, sizeof(uboPropeller), 0);
     }
