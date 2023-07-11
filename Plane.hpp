@@ -155,8 +155,7 @@ private:
                 if (!prevCollisions.empty() && prevCollisions[0] == NONE) {
                     // if looking back: float yaw = M_PI - eulerAngles(rotation).y;
                     float yaw = isPointingNorth()? eulerAngles(rotation).y : M_PI - eulerAngles(rotation).y;
-                    rotation *= inverse(rotation); // returns rotation to initial state
-                    rotation = rotate(rotation, yaw, vec3{0, 1, 0}); // preserves yaw
+                    rotation = angleAxis(yaw, vec3{0, 1, 0}); // preserves initial yaw
                 }
 
 
@@ -243,7 +242,7 @@ private:
 
 public:
     Plane(const Wing& wing, const vector<vec3>& collisionDetectionVertices = {}, const vec3 &initialPosition = vec3(0),
-          const quat &initialRotation = quat(1, 0, 0, 0)) :
+          const quat &initialRotation = identity<quat>()) :
             wing(wing),
             position(initialPosition),
             initialPosition(initialPosition),
@@ -264,9 +263,9 @@ public:
 
         float wingLift = wing.computeLift((inverse(uAxes) * speed).z);
 
-        rotation *= rotate(quat(1,0,0,0), rollDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.x * wingLift * (controls.roll /* - computeAutoRollRotation()*/) * inputs->deltaT, inputs->deltaT), vec3(1, 0, 0))
-                * rotate(quat(1,0,0,0), yawDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.y * wingLift * controls.yaw * inputs->deltaT, inputs->deltaT), vec3(0, 1, 0))
-                * rotate(quat(1,0,0,0), pitchDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.z * wingLift * controls.pitch * inputs->deltaT, inputs->deltaT), vec3(0, 0, 1));
+        rotation = rotate(rotation, rollDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.x * wingLift * (controls.roll /* - computeAutoRollRotation()*/) * inputs->deltaT, inputs->deltaT), vec3(1, 0, 0));
+        rotation = rotate(rotation, yawDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.y * wingLift * controls.yaw * inputs->deltaT, inputs->deltaT), vec3(0, 1, 0));
+        rotation = rotate(rotation, pitchDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.z * wingLift * controls.pitch * inputs->deltaT, inputs->deltaT), vec3(0, 0, 1));
 
         speed += inputs->deltaT * EXTERNAL_ACCELERATIONS; // external accelerations (doesn't require multiplying by uAxes: already in world coordinates)
 
@@ -307,7 +306,7 @@ public:
     void resetState() {
         speed = INITIAL_SPEED;
         position = initialPosition;
-        rotation = {1, 0, 0, 0};
+        rotation = identity<quat>();
         prevCollisions.clear();
     }
 
