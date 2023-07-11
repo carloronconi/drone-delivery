@@ -280,12 +280,9 @@ class Game : public BaseProject {
 
         VAnimation.init(this, {
                 {0, sizeof(VertexAnimation), VK_VERTEX_INPUT_RATE_VERTEX}
-                },{ {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexAnimation, pos),
-                    sizeof(glm::vec3), POSITION},
-                        {0, 1, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexAnimation, norm),
-                         sizeof(glm::vec3), NORMAL},
-                        {0, 2, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexAnimation, UV),
-                         sizeof(glm::vec2), UV}
+                }, {
+                    {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexAnimation, pos),
+                        sizeof(glm::vec3), POSITION}
                 });
 
 		// Pipelines [Shader couples]

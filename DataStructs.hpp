@@ -78,8 +78,6 @@ struct VertexOverlay {
 
 struct VertexAnimation {
     glm::vec3 pos;
-    glm::vec3 norm;
-    glm::vec2 UV;
 };
 
 enum GameState {SPLASH, PLAYING, WON, LOST};
