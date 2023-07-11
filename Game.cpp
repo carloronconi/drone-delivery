@@ -224,8 +224,7 @@ class Game : public BaseProject {
 				});
 
         DSLPropeller.init(this, {
-                {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS},
-                {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT}
+                    {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_ALL_GRAPHICS}
         });
 
 		DSLGubo.init(this, {
@@ -302,7 +301,7 @@ class Game : public BaseProject {
 		POverlay.init(this, &VOverlay, "shaders/OverlayVert.spv", "shaders/OverlayFrag.spv", {&DSLOverlay});
 		POverlay.setAdvancedFeatures(VK_COMPARE_OP_LESS_OR_EQUAL, VK_POLYGON_MODE_FILL,
  								    VK_CULL_MODE_NONE, true);
-        PPropeller.init(this, &VAnimation, "shaders/AnimationVert.spv", "shaders/AnimationFrag.spv", {&DSLGubo, &DSLPropeller});
+        PPropeller.init(this, &VAnimation, "shaders/AnimationVert.spv", "shaders/AnimationFrag.spv", {&DSLPropeller});
         PPropeller.setAdvancedFeatures(VK_COMPARE_OP_LESS, VK_POLYGON_MODE_FILL,
                                        VK_CULL_MODE_BACK_BIT, true);
 
@@ -560,10 +559,9 @@ class Game : public BaseProject {
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MArrow.indices.size()), 1, 0, 0, 0);
 
-        DSGubo.bind(commandBuffer, PPropeller, 0, currentImage);
         PPropeller.bind(commandBuffer);
         MPropeller.bind(commandBuffer);
-        DSPropeller.bind(commandBuffer, PPropeller, 1, currentImage);
+        DSPropeller.bind(commandBuffer, PPropeller, 0, currentImage);
         vkCmdDrawIndexed(commandBuffer,
                          static_cast<uint32_t>(MPropeller.indices.size()), PROPELLER_INSTANCES, 0, 0, 0);
 
