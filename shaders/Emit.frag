@@ -85,7 +85,7 @@ vec3 pointLightDir() {
 }
 
 vec3 pointLightColor() {
-    return gubo.DlightColor.rgb * pow((g / length(gubo.eyePos - fragPos)), beta);
+    return gubo.DlightColor.rgb * pow((g / length(pointLightPos - fragPos)), beta);
 }
 
 void main() {

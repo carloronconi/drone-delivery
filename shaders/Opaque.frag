@@ -75,15 +75,15 @@ vec3 BRDF(vec3 V, vec3 N, vec3 L, vec3 Md, float sigma) {
 }
 
 const float beta = 2.0f;
-const float g = 1.5;
-const vec3 pointLightPos = vec3(-30.0, 75.0, -30.0);
+const float g = 1.0f;
+const vec3 pointLightPos = vec3(-64.0, 100.0, -64.0);
 
 vec3 pointLightDir() {
     return normalize(pointLightPos - fragPos);
 }
 
 vec3 pointLightColor() {
-    return gubo.DlightColor.rgb * pow((g / length(gubo.eyePos - fragPos)), beta);
+    return gubo.DlightColor.rgb * pow((g / length(pointLightPos - fragPos)), beta);
 }
 
 void main() {
