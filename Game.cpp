@@ -134,7 +134,7 @@ class Game : public BaseProject {
         uboSplash.mvpMat = glm::mat4(1);
         uboSplash.instancesToDraw = 1.0;
 
-        gubo.DlightDir = glm::normalize(glm::vec3(1, 2, 3));
+        gubo.DlightDir = glm::normalize(glm::vec3(1, 1, 1));
         gubo.DlightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
         gubo.AmbLightColor = glm::vec3(0.9f);
 
@@ -665,7 +665,7 @@ class Game : public BaseProject {
         projMat[1][1] *= -1;
 
         gubo.eyePos = camPos;
-        gubo.usePointLight = (userInputs.handleQ)? 1.0 : 0.0;
+        gubo.useAltLight = (userInputs.handleQ) ? 1.0 : 0.0;
         // Writes value to the GPU
         DSGubo.map(currentImage, &gubo, sizeof(gubo), 0);
         // the .map() method of a DataSet object, requires the current image of the swap chain as first parameter

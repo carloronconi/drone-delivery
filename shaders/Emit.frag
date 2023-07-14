@@ -12,7 +12,7 @@ layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
     vec3 DlightColor;	// color of the direct light
     vec3 AmbLightColor;	// ambient light
     vec3 eyePos;		// position of the viewer
-    float usePointLight;
+    float useAltLight;
 } gubo;
 
 layout(set = 1, binding = 0) uniform UniformBufferObject {
@@ -26,28 +26,6 @@ layout(set = 1, binding = 0) uniform UniformBufferObject {
 
 layout(set = 1, binding = 1) uniform sampler2D tex;
 layout(set = 1, binding = 2) uniform sampler2D texEmit;
-
-/*
-1) LIGHTING: DIRECT vs POINT (vs SPOT)
-
-DIRECT LIGHT
-vec3 lightDir = gubo.lightDir;
-vec3 lightColor = gubo.lightColor.rgb;
-
-POINT LIGHT
-vec3 lightDir = normalize(gubo.eyePos - fragPos);
-vec3 lightColor = vec3(gubo.lightColor) * pow((g / length(gubo.eyePos - fragPos)), beta);
-
-SPOT LIGHT
-vec3 lightDir = normalize(gubo.eyePos - fragPos);
-vec3 arg = (normalize(gubo.eyePos - fragPos) * gubo.lightDir - cosout) / (cosin - cosout);
-vec3 lightColor = vec3(gubo.lightColor) * pow((g / length(gubo.eyePos - fragPos)), beta) * clamp(arg, cosout, cosin);
-
-2) BRDF: LAMBERT + PHONG/BLINN vs OREN-NAYAR vs COOK-TORRANCE
-
-3) AMBIENT: STANDARD vs HEMISPHERIC vs IMAGE-BASED
-
-*/
 
 vec3 BRDF(vec3 V, vec3 N, vec3 L, vec3 Md, float sigma) {
     //vec3 V  - direction of the viewer [aka OmegaR]
@@ -78,20 +56,28 @@ vec3 BRDF(vec3 V, vec3 N, vec3 L, vec3 Md, float sigma) {
 
 const float beta = 2.0f;
 const float g = 1.0f;
-const vec3 pointLightPos = vec3(-64.0, 100.0, -64.0);
+const vec3 altLightPos = vec3(-64.0, 100.0, -64.0);
+const float cosout = 0.5;
+const float cosin  = 0.95;
 
 vec3 pointLightDir() {
-    return normalize(pointLightPos - fragPos);
+    return normalize(altLightPos - fragPos);
 }
 
 vec3 pointLightColor() {
-    return gubo.DlightColor.rgb * pow((g / length(pointLightPos - fragPos)), beta);
+    return gubo.DlightColor.rgb * pow((g / length(altLightPos - fragPos)), beta);
+}
+
+vec3 altLightColor(vec3 lightDir) {
+    float arg = (dot(normalize(altLightPos - fragPos), lightDir) - cosout) / (cosin - cosout);
+    vec3 lightColor = gubo.DlightColor.rgb * pow((g / length(altLightPos - fragPos)), beta) * clamp(arg, 0.0, 1.0);
+    return lightColor;
 }
 
 void main() {
-    // DIRECT LIGHT
-    vec3 lightDir = (gubo.usePointLight == 1.0)? pointLightDir() : normalize(gubo.DlightDir); // AKA l
-    vec3 lightColor = (gubo.usePointLight == 1.0)? pointLightColor() : gubo.DlightColor.rgb;
+    // DIRECT or SPOT LIGHT (POINT disabled)
+    vec3 lightDir = /*(gubo.useAltLight == 1.0)? pointLightDir() :*/ normalize(gubo.DlightDir); // AKA l
+    vec3 lightColor = (gubo.useAltLight == 1.0)? /*pointLightColor()*/ altLightColor(lightDir) : gubo.DlightColor.rgb;
 
     vec3 albedo = texture(tex, fragUV).rgb;
     // OREN-NAYAR
@@ -100,12 +86,13 @@ void main() {
     vec3 eyeDir = normalize(gubo.eyePos - fragPos); // AKA V, v, omegaR
 
     // STANDARD - AMBIENT LIGHTING
-    vec3 mAmbient = albedo * ubo.amb;
+    float amb = (gubo.useAltLight == 1.0)? ubo.amb / 4.0 : ubo.amb;
+    vec3 mAmbient = albedo * amb;
     vec3 lAmbient = gubo.AmbLightColor;
     vec3 ambient = lAmbient * mAmbient;
 
     // EMISSION
-    vec3 emission = gubo.usePointLight * texture(texEmit, fragUV).rgb;		// emission color
+    vec3 emission = gubo.useAltLight * texture(texEmit, fragUV).rgb;		// emission color
 
     // ADDING EVERYTHING
     vec3 reflection = BRDF(eyeDir, normal, lightDir, albedo, ubo.sigma); // last parameter is roughness

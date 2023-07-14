@@ -61,7 +61,7 @@ struct GlobalUniformBlock {
     alignas(16) glm::vec3 DlightColor;
     alignas(16) glm::vec3 AmbLightColor;
     alignas(16) glm::vec3 eyePos;
-    alignas(4) float usePointLight;
+    alignas(4) float useAltLight;
 };
 
 // The vertices data structures
