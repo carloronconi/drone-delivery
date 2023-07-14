@@ -154,10 +154,10 @@ private:
                 // rotate only if previous collision state was NONE (was in the sky)
                 if (!prevCollisions.empty() && prevCollisions[0] == NONE) {
                     // if looking back: float yaw = M_PI - eulerAngles(rotation).y;
-                    float yaw = isPointingNorth()? eulerAngles(rotation).y : M_PI - eulerAngles(rotation).y;
+                    float tempYaw = eulerAngles(rotation).y;
+                    float yaw = isPointingNorth()? tempYaw : M_PI - tempYaw;
                     rotation = angleAxis(yaw, vec3{0, 1, 0}); // preserves initial yaw
                 }
-
 
                 //cout << "COLLISION WITH GROUND DETECTED\n";
                 break;
@@ -194,7 +194,7 @@ private:
          * euler angle exist, meaning sometimes eulerAngles doesn't return the most "logical" triplet
          * to fix it, try all the cases and see what triplet is returned and change push accordingly
          */
-        float roll = eulerAngles(rotation).y;
+        float roll = eulerAngles(rotation).z;
         float push = 0;
         if (0.0 >= roll && roll < M_PI / 2.0) push = - 2.0 * roll / M_PI; // push linearly harder for bigger roll angles
         else if (3.0 * M_PI / 2.0 <= roll && roll < 2.0 * M_PI) push = 2.0 * roll / (3.0 * M_PI);
@@ -204,12 +204,9 @@ private:
     }
 
     void updateUAxes() {
-        // unitary-length axes xyz in plane coordinate rotated to xyz axes in world space
-        // used to pass from plane's coordinate system to world coordinate system
-        uAxes = toMat4(rotation) * mat4(1, 0, 0, 1,
-                                      0, 1, 0, 1,
-                                      0, 0, 1, 1,
-                                      0, 0, 0, 1);
+        // stores 4x4 homogeneous rotation matrix as a 3x3 matrix:
+        // used to rotate vectors from plane's coordinate system to world coordinate system
+        uAxes = toMat4(rotation);
     }
 
     void printDebugInfo(const map<string, vec3>& additionalInfo) {
@@ -263,6 +260,7 @@ public:
 
         float wingLift = wing.computeLift((inverse(uAxes) * speed).z);
 
+        // from glm::rotate documentation: returns and takes as input either rotation MATRIX or rotation QUATERNION
         rotation = rotate(rotation, rollDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.x * wingLift * (controls.roll /* - computeAutoRollRotation()*/) * inputs->deltaT, inputs->deltaT), vec3(1, 0, 0));
         rotation = rotate(rotation, yawDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.y * wingLift * controls.yaw * inputs->deltaT, inputs->deltaT), vec3(0, 1, 0));
         rotation = rotate(rotation, pitchDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.z * wingLift * controls.pitch * inputs->deltaT, inputs->deltaT), vec3(0, 0, 1));
