@@ -70,7 +70,7 @@ private:
     // state of the plane in world coordinates
     vec3 position;
     vec3 initialPosition;
-    mat4 rotationMat;
+    mat4 rotationMat; // doesn't solve flipping issue
     vec3 speed = INITIAL_SPEED;
     mat3 uAxes;
     const Wing& wing;
