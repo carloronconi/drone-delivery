@@ -51,7 +51,7 @@ public:
     constexpr static const float BASE = 2;
     constexpr static const float WING_LIFT_ANGLE = glm::radians(15.0f);
     constexpr static const float WING_INEFFICIENCY = 1.1f;
-    constexpr static const bool PRINT_DEBUG = true;
+    constexpr static const bool PRINT_DEBUG = false;
     // friction deceleration in plane coordinates (z factor already accounted for in wing inefficiency)
     constexpr static const vec3 FRICTION = vec3(5, 1, 1);
     // all external accelerations including gravity
