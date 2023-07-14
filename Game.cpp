@@ -653,7 +653,7 @@ class Game : public BaseProject {
          * but you can find the vertex "terrain" with closest xz and enforce that player.y > terrain.y
          */
 
-        if(plane->isCollisionDetected()) {
+        if(plane->isCollisionDetected() && gameState == PLAYING) {
             lives--;
         }
 
@@ -688,7 +688,7 @@ class Game : public BaseProject {
         uboPlane.nMat = glm::inverse(glm::transpose(planeWorldMat));
         DSPlane.map(currentImage, &uboPlane, sizeof(uboPlane), 0);
 
-        if (box->isTargetHit()) {
+        if (box->isTargetHit() && gameState == PLAYING) {
             targetPos.x = static_cast<float>(rand() % RANGE + START);
             targetPos.z = static_cast<float>(rand() % RANGE + START);
             if (gameState == 1) score++;
@@ -755,6 +755,7 @@ class Game : public BaseProject {
 
 		switch(gameState) {
 		  case SPLASH: {
+              plane->resetState();
               if(userInputs->handleNext) gameState = PLAYING;
               break;
           }
