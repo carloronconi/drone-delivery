@@ -204,12 +204,9 @@ private:
     }
 
     void updateUAxes() {
-        // unitary-length axes xyz in plane coordinate rotated to xyz axes in world space
-        // used to pass from plane's coordinate system to world coordinate system
-        uAxes = rotationMat * mat4(1, 0, 0, 1,
-                                      0, 1, 0, 1,
-                                      0, 0, 1, 1,
-                                      0, 0, 0, 1);
+        // stores 4x4 homogeneous rotation matrix as a 3x3 matrix:
+        // used to rotate vectors from plane's coordinate system to world coordinate system
+        uAxes = rotationMat;
     }
 
     void printDebugInfo(const map<string, vec3>& additionalInfo) {
