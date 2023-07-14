@@ -26,25 +26,9 @@ layout(set = 1, binding = 0) uniform UniformBufferObject {
 layout(set = 1, binding = 1) uniform sampler2D tex;
 
 /*
-1) LIGHTING: DIRECT vs POINT (vs SPOT)
-
-DIRECT LIGHT
-vec3 lightDir = gubo.lightDir;
-vec3 lightColor = gubo.lightColor.rgb;
-
-POINT LIGHT
-vec3 lightDir = normalize(gubo.eyePos - fragPos);
-vec3 lightColor = vec3(gubo.lightColor) * pow((g / length(gubo.eyePos - fragPos)), beta);
-
-SPOT LIGHT
-vec3 lightDir = normalize(gubo.eyePos - fragPos);
-vec3 arg = (normalize(gubo.eyePos - fragPos) * gubo.lightDir - cosout) / (cosin - cosout);
-vec3 lightColor = vec3(gubo.lightColor) * pow((g / length(gubo.eyePos - fragPos)), beta) * clamp(arg, cosout, cosin);
-
+1) LIGHTING: DIRECT vs POINT vs SPOT
 2) BRDF: LAMBERT + PHONG/BLINN vs OREN-NAYAR vs COOK-TORRANCE
-
 3) AMBIENT: STANDARD vs HEMISPHERIC vs IMAGE-BASED
-
 */
 
 vec3 BRDF(vec3 V, vec3 N, vec3 L, vec3 Md, float sigma) {
@@ -98,7 +82,8 @@ void main() {
     vec3 eyeDir = normalize(gubo.eyePos - fragPos); // AKA V, v, omegaR
 
     // STANDARD - AMBIENT LIGHTING
-    vec3 mAmbient = albedo * ubo.amb;
+    float amb = (gubo.usePointLight == 1.0)? ubo.amb / 5.0 : ubo.amb;
+    vec3 mAmbient = albedo * amb;
     vec3 lAmbient = gubo.AmbLightColor;
     vec3 ambient = lAmbient * mAmbient;
 
