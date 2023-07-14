@@ -70,7 +70,7 @@ private:
     // state of the plane in world coordinates
     vec3 position;
     vec3 initialPosition;
-    quat rotation;
+    mat4 rotationMat;
     vec3 speed = INITIAL_SPEED;
     mat3 uAxes;
     const Wing& wing;
@@ -154,10 +154,10 @@ private:
                 // rotate only if previous collision state was NONE (was in the sky)
                 if (!prevCollisions.empty() && prevCollisions[0] == NONE) {
                     // if looking back: float yaw = M_PI - eulerAngles(rotation).y;
-                    float yaw = isPointingNorth()? eulerAngles(rotation).y : M_PI - eulerAngles(rotation).y;
-                    rotation = angleAxis(yaw, vec3{0, 1, 0}); // preserves initial yaw
+                    float tempYaw = eulerAngles(quat_cast(rotationMat)).y;
+                    float yaw = isPointingNorth()? tempYaw : static_cast<float>(M_PI) - tempYaw;
+                    rotationMat = rotate(mat4(1), yaw, vec3{0, 1, 0}); // preserves initial yaw
                 }
-
 
                 //cout << "COLLISION WITH GROUND DETECTED\n";
                 break;
@@ -194,7 +194,7 @@ private:
          * euler angle exist, meaning sometimes eulerAngles doesn't return the most "logical" triplet
          * to fix it, try all the cases and see what triplet is returned and change push accordingly
          */
-        float roll = eulerAngles(rotation).y;
+        float roll = eulerAngles(quat_cast(rotationMat)).z;
         float push = 0;
         if (0.0 >= roll && roll < M_PI / 2.0) push = - 2.0 * roll / M_PI; // push linearly harder for bigger roll angles
         else if (3.0 * M_PI / 2.0 <= roll && roll < 2.0 * M_PI) push = 2.0 * roll / (3.0 * M_PI);
@@ -206,7 +206,7 @@ private:
     void updateUAxes() {
         // unitary-length axes xyz in plane coordinate rotated to xyz axes in world space
         // used to pass from plane's coordinate system to world coordinate system
-        uAxes = toMat4(rotation) * mat4(1, 0, 0, 1,
+        uAxes = rotationMat * mat4(1, 0, 0, 1,
                                       0, 1, 0, 1,
                                       0, 0, 1, 1,
                                       0, 0, 0, 1);
@@ -242,11 +242,11 @@ private:
 
 public:
     Plane(const Wing& wing, const vector<vec3>& collisionDetectionVertices = {}, const vec3 &initialPosition = vec3(0),
-          const quat &initialRotation = identity<quat>()) :
+          const mat4 &initialRotationMat = mat4(1)) :
             wing(wing),
             position(initialPosition),
             initialPosition(initialPosition),
-            rotation(initialRotation),
+            rotationMat(initialRotationMat),
             verticesToAvoid(collisionDetectionVertices) {}
 
     void updateInputs(UserInputs* userInputs) {
@@ -263,9 +263,10 @@ public:
 
         float wingLift = wing.computeLift((inverse(uAxes) * speed).z);
 
-        rotation = rotate(rotation, rollDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.x * wingLift * (controls.roll /* - computeAutoRollRotation()*/) * inputs->deltaT, inputs->deltaT), vec3(1, 0, 0));
-        rotation = rotate(rotation, yawDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.y * wingLift * controls.yaw * inputs->deltaT, inputs->deltaT), vec3(0, 1, 0));
-        rotation = rotate(rotation, pitchDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.z * wingLift * controls.pitch * inputs->deltaT, inputs->deltaT), vec3(0, 0, 1));
+        // from glm::rotate documentation: returns (and takes as input) rotation MATRIX, or rotation QUATERNION according to signatures!
+        rotationMat = rotate(rotationMat, rollDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.x * wingLift * (controls.roll /* - computeAutoRollRotation()*/) * inputs->deltaT, inputs->deltaT), vec3(1, 0, 0));
+        rotationMat = rotate(rotationMat, yawDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.y * wingLift * controls.yaw * inputs->deltaT, inputs->deltaT), vec3(0, 1, 0));
+        rotationMat = rotate(rotationMat, pitchDamper.damp(CONTROL_SURFACES_ROT_ACCELERATION.z * wingLift * controls.pitch * inputs->deltaT, inputs->deltaT), vec3(0, 0, 1));
 
         speed += inputs->deltaT * EXTERNAL_ACCELERATIONS; // external accelerations (doesn't require multiplying by uAxes: already in world coordinates)
 
@@ -290,7 +291,7 @@ public:
 
         mat4 world =
                 translate(mat4(1), position) *
-                toMat4(rotation) *
+                rotationMat *
                 scale(mat4(1), vec3(PLANE_SCALE)); //additional transform to scale down the character in character space
 
 
@@ -306,7 +307,7 @@ public:
     void resetState() {
         speed = INITIAL_SPEED;
         position = initialPosition;
-        rotation = identity<quat>();
+        rotationMat = mat4(1);
         prevCollisions.clear();
     }
 
