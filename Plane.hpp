@@ -93,7 +93,7 @@ private:
     Damper<float> rollDamper = Damper<float>(ROT_DAMPING, 0, upper, lower);
     Damper<float> yawDamper = Damper<float>(ROT_DAMPING, 0, upper, lower);
     Damper<float> pitchDamper = Damper<float>(ROT_DAMPING, 0, upper, lower);
-    Damper<float> throttleDamper = Damper<float>(THROTTLE_DAMPING);
+    Damper<float> throttleDamper = Damper<float>(THROTTLE_DAMPING, 0, upper, lower);
 
     // list of vertices of models for which we want collision detection
     const vector<vec3>& verticesToAvoid;
@@ -258,7 +258,7 @@ public:
         vec3 planeSpeed = inverse(uAxes) * speed; // convert speed from world to plane space
         // engine and wing accelerations
         planeSpeed += inputs->deltaT * (
-                vec3(0.0f, 0.0f, throttleDamper.damp(controls.speed * ENGINE_ACCELERATION, inputs->deltaT))
+                vec3(0.0f, 0.0f, throttleDamper.damp(controls.speed, inputs->deltaT) * ENGINE_ACCELERATION)
                 // acceleration due to plane wings generating lift linear with speed
                 + vec3(0.0, std::cos(WING_LIFT_ANGLE) * wingLift, - WING_INEFFICIENCY * std::sin(WING_LIFT_ANGLE) * wingLift)
         );
