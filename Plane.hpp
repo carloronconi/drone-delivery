@@ -15,6 +15,32 @@
 using namespace glm;
 using namespace std;
 
+string toString(vec3 vector) {
+    static int width = 5;
+    return to_string(vector.x).substr(0, width) + "; " +
+        to_string(vector.y).substr(0, width) + "; " +
+        to_string(vector.z).substr(0, width) + "; ";
+}
+
+void printDebugInfo(const map<string, vec3>& info) {
+    static long lastPrintTime;
+    static int width = 21;
+    long currTime = time(nullptr);
+
+    if (currTime - lastPrintTime < 1.0) return;
+    lastPrintTime = currTime;
+
+    for (const auto& element : info) {
+        cout.width(width); cout << left << element.first;
+    }
+    cout << "\n";
+
+    for (const auto& element : info) {
+        cout.width(width); cout << left << toString(element.second);
+    }
+    cout << "\n";
+}
+
 enum Collision {NONE, GROUND, MESH};
 
 struct ControlsMapping {
@@ -213,34 +239,6 @@ private:
         uAxes = toMat4(rotation);
     }
 
-    void printDebugInfo(const map<string, vec3>& additionalInfo) {
-        static long lastPrintTime;
-        long currTime = time(NULL);
-
-        if (currTime - lastPrintTime < 1.0) return;
-        lastPrintTime = currTime;
-
-        cout.width(20); cout << left << "Position";
-        cout.width(20); cout << left << "World speed";
-        for (const auto& element : additionalInfo) {
-            cout.width(20); cout << left << element.first;
-        }
-
-        cout << "\n";
-
-        cout.width(20); cout << left << toString(position);
-        cout.width(20); cout << left << toString(speed);
-        for (const auto& element : additionalInfo) {
-            cout.width(20); cout << left << toString(element.second);
-        }
-
-        cout << "\n";
-    }
-
-    string toString(vec3 vector) {
-        return to_string((int)vector.x) + " " + to_string((int)vector.y) + " " + to_string((int)vector.z);
-    }
-
 public:
     Plane(const Wing& wing, const vector<vec3>& collisionDetectionVertices = {}, vec3 initialPosition = vec3(0),
           quat initialRotation = identity<quat>()) :
@@ -301,7 +299,9 @@ public:
 
         if (PRINT_DEBUG) {
             map<string, vec3> debugInfo;
-            //debugInfo["Plane speed"] = planeSpeed;
+            debugInfo["Plane speed"] = planeSpeed;
+            //debugInfo["Position"] = position;
+            //debugInfo["World speed"] = speed;
             debugInfo["RYP dampers"] = {rollDamp, yawDamp, pitchDamp};
             printDebugInfo(debugInfo);
         }
