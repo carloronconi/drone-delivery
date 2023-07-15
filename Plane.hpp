@@ -11,34 +11,16 @@
 #include <ctime>
 #include "Damper.hpp"
 #include "Wing.hpp"
+#include "Logger.hpp"
 
 using namespace glm;
 using namespace std;
 
-string toString(vec3 vector) {
+string vecToString(vec3 vector) {
     static int width = 5;
     return to_string(vector.x).substr(0, width) + "; " +
         to_string(vector.y).substr(0, width) + "; " +
         to_string(vector.z).substr(0, width) + "; ";
-}
-
-void printDebugInfo(const map<string, vec3>& info) {
-    static long lastPrintTime;
-    static int width = 21;
-    long currTime = time(nullptr);
-
-    if (currTime - lastPrintTime < 1.0) return;
-    lastPrintTime = currTime;
-
-    for (const auto& element : info) {
-        cout.width(width); cout << left << element.first;
-    }
-    cout << "\n";
-
-    for (const auto& element : info) {
-        cout.width(width); cout << left << toString(element.second);
-    }
-    cout << "\n";
 }
 
 enum Collision {NONE, GROUND, MESH};
@@ -296,14 +278,15 @@ public:
                 toMat4(rotation) *
                 scale(mat4(1), vec3(PLANE_SCALE)); //additional transform to scale down the character in character space
 
-
+        static Logger logger(cout);
         if (PRINT_DEBUG) {
             map<string, vec3> debugInfo;
+            debugInfo["Position"] = position;
             debugInfo["Plane speed"] = planeSpeed;
-            //debugInfo["Position"] = position;
-            //debugInfo["World speed"] = speed;
+            debugInfo["World speed"] = speed;
             debugInfo["RYP dampers"] = {rollDamp, yawDamp, pitchDamp};
-            printDebugInfo(debugInfo);
+
+            logger.log<vec3>(debugInfo, &vecToString, 21);
         }
 
         return world;
