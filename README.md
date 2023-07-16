@@ -22,12 +22,16 @@ Package-dropping is implemented in a similar way, but disregards rotations and l
 
 [Collision reaction](https://github.com/carloronconi/drone-delivery/blob/980084454ca97ce89378cf34ca8b3030833ac88b/Plane.hpp#L154) depends on the type of collision that was detected. In case of GROUND collision, the plane is simply kept above ground and its yaw is preserved, while all other rotations are zeroed. In case of MESH collision, the plane is "bounced" back in the opposite direction of its speed.
 
-<img width="32%" src="https://github.com/carloronconi/drone-delivery/blob/main/readme-assets/crash.gif">
+<p align="center" width="100%">
+    <img width="49%" src="https://github.com/carloronconi/drone-delivery/blob/main/readme-assets/crash.gif">
+</p>
 
 ### Dynamic camera view
 The camera allows for two modes: the classic follow camera and a stationary camera on the landing strip, pointed to the plane. The camera is [damped](https://github.com/carloronconi/drone-delivery/blob/78f03a27c694011560871ec6629f8b08b1ececde/Damper.hpp) during each of the two states and during the switch, creating a smooth transition between the two.
 
-<img width="32%" src="https://github.com/carloronconi/drone-delivery/blob/main/readme-assets/camera.gif">
+<p align="center" width="100%">
+    <img width="49%" src="https://github.com/carloronconi/drone-delivery/blob/main/readme-assets/camera.gif">
+</p>
 
 ### Custom pipelines with dynamic day/night modes
 A total of 5 custom pipelines exist, each implementing a different vertex-fragment shader couple. Complete list of the pipelines:
@@ -39,4 +43,6 @@ A total of 5 custom pipelines exist, each implementing a different vertex-fragme
 
 Some pipelines implement instanced-rendering to draw more instances of the same model in different positions without needing to store a different model for each. This is how the road tiles or the packages on the overlay are rendered.
 
-<img width="32%" src="https://github.com/carloronconi/drone-delivery/blob/main/readme-assets/night.gif">
+<p align="center" width="100%">
+    <img width="49%" src="https://github.com/carloronconi/drone-delivery/blob/main/readme-assets/night.gif">
+</p>
