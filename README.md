@@ -1,7 +1,11 @@
 # Drone delivery
 Fly your drone around the city and deliver all the packages! Beware: crashing into the buildings is easier than you think!
 
-![](https://github.com/carloronconi/drone-delivery/blob/main/readme-assets/start.gif)
+<p align="center" width="100%">
+    <img width="32%" src="https://github.com/carloronconi/drone-delivery/blob/main/readme-assets/start.gif">
+    <img width="32%" src="https://github.com/carloronconi/drone-delivery/blob/main/readme-assets/drop.gif">
+    <img width="32%" src="https://github.com/carloronconi/drone-delivery/blob/main/readme-assets/night.gif">
+</p>
 
 Project for [Computer Graphics
 course](https://www11.ceda.polimi.it/schedaincarico/schedaincarico/controller/scheda_pubblica/SchedaPublic.do?&evn_default=evento&c_classe=789226&polij_device_category=DESKTOP&__pj0=0&__pj1=d5ba826011a30aecef5f9cd5ea045a7d) - MSc in Computer Science and Engineering @ Polimi.
