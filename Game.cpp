@@ -79,8 +79,8 @@ class Game : public BaseProject {
     const vec3 PLANE_STARTING_POS = {48, 0, 0}; // starts in middle of long side offset to the side
 
     LogarithmicWing wingImplementation = LogarithmicWing(Plane::MAX_WING_LIFT, Plane::MAX_SPEED, Plane::BASE);
-    Plane* const plane = new Plane(wingImplementation, collisionDetectionVertices, PLANE_STARTING_POS);
-    Package* const box = new Package(plane->getPositionInWorldCoordinates(), plane->getSpeedInWorldCoordinates(), targetPos);
+    Plane plane = Plane(wingImplementation, collisionDetectionVertices, PLANE_STARTING_POS);
+    Package box = Package(plane.getPositionInWorldCoordinates(), plane.getSpeedInWorldCoordinates(), targetPos);
     int score = 0;
     int lives = STARTING_LIVES;
 
@@ -653,13 +653,13 @@ class Game : public BaseProject {
          * but you can find the vertex "terrain" with closest xz and enforce that player.y > terrain.y
          */
 
-        if(plane->isCollisionDetected() && gameState == PLAYING) {
+        if(plane.isCollisionDetected() && gameState == PLAYING) {
             lives--;
         }
 
-        glm::mat4 planeWorldMat = plane->computeWorldMatrix();
+        glm::mat4 planeWorldMat = plane.computeWorldMatrix();
         glm::vec3 camPos = computeCameraPosition(planeWorldMat, userInputs);
-        glm::vec3 planePos = plane->getPositionInWorldCoordinates();
+        glm::vec3 planePos = plane.getPositionInWorldCoordinates();
         glm::mat4 viewMat = glm::lookAt(camPos, planePos, glm::vec3(0.0f, 1.0f, 0.0f)) ;
         glm::mat4 projMat = glm::perspective(FOVy, Ar, nearPlane, farPlane);
         projMat[1][1] *= -1;
@@ -688,7 +688,7 @@ class Game : public BaseProject {
         uboPlane.nMat = glm::inverse(glm::transpose(planeWorldMat));
         DSPlane.map(currentImage, &uboPlane, sizeof(uboPlane), 0);
 
-        if (box->isTargetHit() && gameState == PLAYING) {
+        if (box.isTargetHit() && gameState == PLAYING) {
             targetPos.x = static_cast<float>(rand() % RANGE + START);
             targetPos.z = static_cast<float>(rand() % RANGE + START);
             if (gameState == 1) score++;
@@ -699,7 +699,7 @@ class Game : public BaseProject {
         uboArrow.nMat = glm::inverse(glm::transpose(uboArrow.mMat));
         DSArrow.map(currentImage, &uboArrow, sizeof(uboArrow), 0);
 
-        uboBox.mMat = box->computeWorldMatrix();
+        uboBox.mMat = box.computeWorldMatrix();
         uboBox.mvpMat = projMat * viewMat * uboBox.mMat;
         uboBox.nMat = glm::inverse(glm::transpose(uboBox.mMat));
         DSBox.map(currentImage, &uboBox, sizeof(uboBox), 0);
@@ -726,7 +726,7 @@ class Game : public BaseProject {
 
         //cout << "plane x speed: " << plane->getSpeedInPlaneCoordinates().x << "\n";
         uboPropeller.mvpMat = projMat * viewMat * translate(scale(planeWorldMat, vec3(0.2)), {- PROPELLER_OFFSET.x / 2.0, 5.0, 7.0});
-        uboPropeller.visible = glm::length(plane->getSpeedInWorldCoordinates()) > 0.01; // propeller animation visible only if plane moving forward
+        uboPropeller.visible = glm::length(plane.getSpeedInWorldCoordinates()) > 0.01; // propeller animation visible only if plane moving forward
         uboPropeller.time += userInputs.deltaT;
         DSPropeller.map(currentImage, &uboPropeller, sizeof(uboPropeller), 0);
     }
@@ -749,14 +749,14 @@ class Game : public BaseProject {
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		}
 
-        auto* userInputs = new UserInputs(this, gameState);
-        plane->updateInputs(userInputs);
-        box->updateInputs(userInputs);
+        auto userInputs = UserInputs(this, gameState);
+        plane.updateInputs(&userInputs);
+        box.updateInputs(&userInputs);
 
 		switch(gameState) {
 		  case SPLASH: {
-              plane->resetState();
-              if(userInputs->handleNext) gameState = PLAYING;
+              plane.resetState();
+              if(userInputs.handleNext) gameState = PLAYING;
               break;
           }
 		  case PLAYING: {
@@ -772,16 +772,16 @@ class Game : public BaseProject {
           {
               score = 0;
               lives = STARTING_LIVES;
-              plane->resetState();
-              if(userInputs->handleNext) gameState = SPLASH;
+              plane.resetState();
+              if(userInputs.handleNext) gameState = SPLASH;
               break;
           }
 		}
 
-        updateSplashUniformBuffer(currentImage, *userInputs);
-        updatePlayingUniformBuffer(currentImage, *userInputs);
-        updateWinUniformBuffer(currentImage, *userInputs);
-        updateLoseUniformBuffer(currentImage, *userInputs);
+        updateSplashUniformBuffer(currentImage, userInputs);
+        updatePlayingUniformBuffer(currentImage, userInputs);
+        updateWinUniformBuffer(currentImage, userInputs);
+        updateLoseUniformBuffer(currentImage, userInputs);
 	}
 
     /**
