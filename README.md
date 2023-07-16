@@ -2,9 +2,8 @@
 Fly your drone around the city and deliver all the packages! Beware: crashing into the buildings is easier than you think!
 
 <p align="center" width="100%">
-    <img width="32%" src="https://github.com/carloronconi/drone-delivery/blob/main/readme-assets/start.gif">
-    <img width="32%" src="https://github.com/carloronconi/drone-delivery/blob/main/readme-assets/drop.gif">
-    <img width="32%" src="https://github.com/carloronconi/drone-delivery/blob/main/readme-assets/night.gif">
+    <img width="49%" src="https://github.com/carloronconi/drone-delivery/blob/main/readme-assets/start.gif">
+    <img width="49%" src="https://github.com/carloronconi/drone-delivery/blob/main/readme-assets/drop.gif">
 </p>
 
 Project for [Computer Graphics
@@ -20,8 +19,17 @@ Plane flight is simulated using a simple physics engine implementing:
 Package-dropping is implemented in a similar way, but disregards rotations and lift.
 ### Simple collision detection & reaction
 Detect
+
 React
+
+<img width="32%" src="https://github.com/carloronconi/drone-delivery/blob/main/readme-assets/crash.gif">
+
 ### Dynamic camera view
 Damped
+
+<img width="32%" src="https://github.com/carloronconi/drone-delivery/blob/main/readme-assets/camera.gif">
+
 ### Custom pipelines with dynamic day/night modes
 List all the different pipelines and the dynamic aspect.
+
+<img width="32%" src="https://github.com/carloronconi/drone-delivery/blob/main/readme-assets/night.gif">
