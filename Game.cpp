@@ -406,12 +406,12 @@ class Game : public BaseProject {
                 {1, TEXTURE, 0, &TCity}
         });
         DSRoad.init(this, &DSLEmit, {
-                {0, UNIFORM, sizeof(OpaqueUniformBlock), nullptr},
+                {0, UNIFORM, sizeof(EmitUniformBlock), nullptr},
                 {1, TEXTURE, 0, &TCity},
                 {2, TEXTURE, 0, &TEmit}
         });
         DSStreet.init(this, &DSLEmit, {
-                {0, UNIFORM, sizeof(OpaqueUniformBlock), nullptr},
+                {0, UNIFORM, sizeof(EmitUniformBlock), nullptr},
                 {1, TEXTURE, 0, &TCity},
                 {2, TEXTURE, 0, &TEmit}
         });
