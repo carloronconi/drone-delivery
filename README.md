@@ -9,6 +9,26 @@ Fly your drone around the city and deliver all the packages! Beware: crashing in
 [Computer Graphics
 course](https://www11.ceda.polimi.it/schedaincarico/schedaincarico/controller/scheda_pubblica/SchedaPublic.do?&evn_default=evento&c_classe=789226&polij_device_category=DESKTOP&__pj0=0&__pj1=d5ba826011a30aecef5f9cd5ea045a7d) - MSc Computer Science and Engineering @ Polimi.
 
+## Usage
+
+[Vulkan](https://www.vulkan.org) and CMake are required. 
+1. Clone the repository wherever you prefer;
+2. Open a terminal and run the following commands:
+3. ```
+   cd drone-delivery 
+   ```
+4. ```
+   cmake .
+   ```
+5. ```
+   make 
+   ```
+6. ```
+   ./drone-delivery
+   ```
+   
+If you're using a modern code editor, when opening the project folder it should be automatically recognised as a CMake project. In that case, just press the "run" button and you're good to go! 
+
 ## Features
 ### Physics engine
 Plane flight is simulated using a simple physics engine. The plane is controlled using WASD and arrow keys to control throttle, roll, pitch and yaw. The physics engine implements: 
