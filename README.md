@@ -12,22 +12,22 @@ course](https://www11.ceda.polimi.it/schedaincarico/schedaincarico/controller/sc
 ## Usage
 
 [Vulkan](https://www.vulkan.org) and CMake are required. 
-1. Clone the repository wherever you prefer;
+1. Clone the repository;
 2. Open a terminal and run the following commands:
-3. ```
+```
    cd drone-delivery 
    ```
-4. ```
+```
    cmake .
    ```
-5. ```
+```
    make 
-   ```
-6. ```
+  ```
+```
    ./drone-delivery
    ```
    
-If you're using a modern code editor, when opening the project folder it should be automatically recognised as a CMake project. In that case, just press the "run" button and you're good to go! 
+If you're using a modern code editor, when opening the project folder it should be automatically recognised as a CMake project. In that case you can skip step number 2: just press the "run" button and you're good to go! 
 
 ## Features
 ### Physics engine
