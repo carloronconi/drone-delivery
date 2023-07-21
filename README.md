@@ -66,3 +66,7 @@ Some pipelines implement instanced-rendering to draw more instances of the same 
 <p align="center" width="100%">
     <img width="49%" src="https://github.com/carloronconi/drone-delivery/blob/main/readme-assets/night.gif">
 </p>
+
+## License
+
+[MIT license](https://github.com/carloronconi/drone-delivery/blob/main/LICENSE.txt)
