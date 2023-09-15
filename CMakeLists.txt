@@ -15,6 +15,4 @@ target_include_directories(${PROJECT_NAME} PUBLIC /Users/$ENV{USER}/VulkanSDK/1.
 
 target_include_directories(${PROJECT_NAME} PUBLIC headers)
 
-target_link_libraries(${PROJECT_NAME} /usr/local/lib/libglfw.3.3.dylib)
-target_link_libraries(${PROJECT_NAME} /Users/$ENV{USER}/VulkanSDK/1.3.239.0/macOS/lib/libvulkan.1.dylib)
-target_link_libraries(${PROJECT_NAME} /Users/$ENV{USER}/VulkanSDK/1.3.239.0/macOS/lib/libvulkan.1.3.239.dylib)
+target_link_libraries(${PROJECT_NAME} -lglfw -lvulkan)

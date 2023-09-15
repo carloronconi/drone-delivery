@@ -312,17 +312,17 @@ class Game : public BaseProject {
 		// The third parameter is the file name
 		// The last is a constant specifying the file type: currently only OBJ or GLTF
         for (int i = 0; i < MCity.size(); ++i) {
-            std::string modelFile = "Models/city_" + std::to_string(i) + ".mgcg";
+            std::string modelFile = "models/city_" + std::to_string(i) + ".mgcg";
             MCity[i].init(this, &VClassic, modelFile, MGCG);
         }
 
-		MPlane.init(this, &VClassic, "Models/plane_001.mgcg", MGCG);
-        MArrow.init(this, &VClassic, "Models/tube.obj", OBJ);
-        MBox.init(this, &VClassic, "Models/box_005.mgcg", MGCG);
-        MRoad.init(this, &VClassic, "Models/road_0.mgcg", MGCG);
-        MStreet.init(this, &VClassic, "Models/street_0.mgcg", MGCG);
+		MPlane.init(this, &VClassic, "models/plane_001.mgcg", MGCG);
+        MArrow.init(this, &VClassic, "models/tube.obj", OBJ);
+        MBox.init(this, &VClassic, "models/box_005.mgcg", MGCG);
+        MRoad.init(this, &VClassic, "models/road_0.mgcg", MGCG);
+        MStreet.init(this, &VClassic, "models/street_0.mgcg", MGCG);
 
-        // MGround.init(this, &VMesh, "Models/ground.mgcg", MGCG);
+        // MGround.init(this, &VMesh, "models/ground.mgcg", MGCG);
         MGround.vertices = {{{-64, 0, -64}, {0, 1, 0}, {0, 0}},
                             {{-64, 0,  64}, {0, 1, 0}, {10, 0}},
                             {{ 64, 0, -64}, {0, 1, 0}, {0, 10}},
@@ -359,7 +359,7 @@ class Game : public BaseProject {
         MHelp.indices = MSplash.indices;
         MHelp.initMesh(this, &VOverlay);
 
-        MPropeller.init(this, &VAnimation, "Models/propeller_animation.obj", OBJ);
+        MPropeller.init(this, &VAnimation, "models/propeller_animation.obj", OBJ);
 		
 		// Create the textures
 		// The second parameter is the file name
